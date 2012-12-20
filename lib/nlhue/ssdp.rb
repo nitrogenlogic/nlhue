@@ -28,18 +28,30 @@ module NLHue
 			# TODO: Structure this using EM::Deferrable instead?
 		end
 
-		# A service discovered by SSDP.
+		# The HTTP response representing a service discovered by SSDP.
 		class Response
-			attr_reader :ip, :response
-			# TODO: Parse response
+			attr_reader :ip, :response, :headers
 
 			def initialize ip, response
 				@ip = ip
 				@response = response
+				@headers = {}
+
+				response.split("\r\n\r\n", 2)[0].lines.each do |line|
+					next unless line.include? ': '
+					key, value = line.split(': ', 2)
+					@headers[key.downcase] = value
+				end
 			end
 
 			def to_s
 				"#{@ip}:\n\t#{@response.lines.to_a.join("\t")}"
+			end
+
+			# Retrieves the value of a header, with case
+			# insensitive matching.
+			def [] header
+				@headers[header.downcase]
 			end
 		end
 
