@@ -6,6 +6,6 @@ require_relative '../lib/nlhue'
 
 EM.run do
 	NLHue::SSDP.discover do |response|
-		response ? puts(response) : EM.stop_event_loop
+		response ? puts(response, response.headers.inspect) : EM.stop_event_loop
 	end
 end

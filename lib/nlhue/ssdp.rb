@@ -37,10 +37,11 @@ module NLHue
 				@response = response
 				@headers = {}
 
-				response.split("\r\n\r\n", 2)[0].lines.each do |line|
-					next unless line.include? ': '
-					key, value = line.split(': ', 2)
-					@headers[key.downcase] = value
+				response.split(/\r?\n\r?\n/, 2)[0].lines.each do |line|
+					if line.include? ':'
+						key, value = line.split(/: ?/, 2)
+						@headers[key.downcase] = value.strip
+					end
 				end
 			end
 
