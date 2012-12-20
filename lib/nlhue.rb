@@ -2,3 +2,4 @@
 # (C)2012 Mike Bourgeous
 
 require_relative 'nlhue/ssdp.rb'
+require_relative 'nlhue/disco.rb'
