@@ -19,6 +19,12 @@ module NLHue
 		end
 	end
 
+	class NotRegisteredError < StandardError
+		def initialize msg="Press the bridge's link button and call .register()."
+			super msg
+		end
+	end
+
 	# A class representing a Hue bridge.  A Bridge object may not refer to
 	# an actual Hue bridge if verify() hasn't succeeded.
 	class Bridge
@@ -143,6 +149,8 @@ module NLHue
 				unless status
 					if result_msgs.include?('link button not pressed')
 						raise LinkButtonError.new
+					elsif result_msgs.include?('unauthorized user')
+						raise NotRegisteredError.new
 					else
 						raise StandardError.new(result_msgs.join(', '))
 					end
