@@ -4,6 +4,7 @@
 require 'eventmachine'
 require 'em/protocols/httpclient'
 require 'rexml/document'
+require 'json'
 
 module NLHue
 	# A class representing a Hue bridge.  A Bridge object may not refer to
@@ -40,6 +41,35 @@ module NLHue
 				end
 
 				yield @verified
+			end
+		end
+
+		# Attempts to register the given username with the Bridge.  The
+		# block will be called with true and the result if registration
+		# succeeds, false and the result (if any) if not.
+		def register username, devicetype, &block
+			raise 'Username must be >= 10 characters' unless username.to_s.length >= 10
+			raise 'Spaces are not permitted in usernames' if username =~ /[[:space:]]/
+
+			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
+			puts "Sending #{msg}"
+			post '/api', msg, do |result|
+				puts "Register result: #{result.inspect}" # XXX
+
+				if result.is_a?(Hash) && result[:status] == 200
+					j = JSON.parse result[:content]
+					status = true
+					j.each do |v|
+						if v['error']; then
+							status = false
+						end
+					end
+					# TODO: Handle an invalid username that results in a new username being created
+
+					yield status, result
+				else
+					yield false, result
+				end
 			end
 		end
 
