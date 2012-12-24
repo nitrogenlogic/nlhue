@@ -43,7 +43,15 @@ module NLHue
 				if result.is_a?(Hash) && result[:status] == 200
 					@desc = REXML::Document.new result[:content]
 					@desc.write($stdout, 4, true) # XXX
-					@desc.elements.each("modelName") do |el|
+					@desc.elements.each('friendlyName') do |el|
+						@name = el.text
+						puts "Friendly name: #{@name}"
+					end
+					@desc.elements.each('serialNumber') do |el|
+						@serial = el.text
+						puts "Serial number: #{@serial}"
+					end
+					@desc.elements.each('modelName') do |el|
 						puts "modelName: #{el.text}" # XXX
 						
 						if el.text.include? 'Philips hue'
