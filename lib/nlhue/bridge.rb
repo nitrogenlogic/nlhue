@@ -7,6 +7,12 @@ require 'rexml/document'
 require 'json'
 
 module NLHue
+	class NotVerifiedError < StandardError
+		def initialize msg="Call .verify() before using the bridge."
+			super msg
+		end
+	end
+
 	class LinkButtonError < StandardError
 		def initialize msg="Press the bridge's link button."
 			super msg
@@ -54,44 +60,88 @@ module NLHue
 		# block will be called with true and the result if registration
 		# succeeds, false and an exception if not.
 		def register username, devicetype, &block
-			raise 'Username must be >= 10 characters' unless username.to_s.length >= 10
-			raise 'Spaces are not permitted in usernames' if username =~ /[[:space:]]/
+			raise NotVerifiedError.new unless @verified
+			check_username username
 
 			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
-			puts "Sending #{msg}"
+			puts "Sending #{msg}" # XXX
 			post '/api', msg, do |response|
 				puts "Register response: #{response.inspect}" # XXX
 
-				result_msgs = []
 				status = true
 				result = response
-				if response.is_a?(Hash) && response[:status] == 200
-					j = JSON.parse response[:content]
-					status = true
-					j.each do |v|
-						if v['error']; then
-							status = false
-							result_msgs << v['error']['description']
-						end
-					end
 
-					# TODO: Handle an invalid username that results in a new username being created
-
-					# FIXME: I don't like this error handling
-					unless status
-						if result_msgs.include?('link button not pressed')
-							result = LinkButtonError.new
-						else
-							result = StandardError.new(msg.join(', '))
-						end
-					end
-				else
+				begin
+					result = check_json response
+				rescue => e
 					status = false
-					result = StandardError.new response
+					result = e
 				end
 
 				yield status, result
 			end
+		end
+
+		# Deletes the given username from the Bridge's whitelist.
+		def unregister username, &block
+			raise NotVerifiedError.new unless @verified
+			check_username username
+
+			delete "/api/#{username}/config/whitelist/#{username}" do |response|
+				puts "Unregister response: #{response.inspect}" # XXX
+
+				status = true
+				result = response
+
+				begin
+					result = check_json response
+				rescue => e
+					status = false
+					result = e
+				end
+
+				yield status, result
+			end
+
+		end
+
+		# Throws errors if the given username is invalid (may not catch
+		# all invalid names).
+		def check_username username
+			raise 'Username must be >= 10 characters.' unless username.to_s.length >= 10
+			raise 'Spaces are not permitted in usernames.' if username =~ /[[:space:]]/
+		end
+
+		# Checks for a valid JSON-containing response from an HTTP
+		# request method, raises an error if invalid or no response.
+		# Does not consider non-200 HTTP response codes as errors.
+		# Returns the received JSON if no error occurred.
+		def check_json response
+			raise 'No response received.' if response == false
+
+			j = nil
+			if response.is_a?(Hash)
+				status = true
+				result_msgs = []
+
+				j = JSON.parse response[:content]
+				j.each do |v|
+					if v['error'].is_a?(Hash); then
+						status = false
+						result_msgs << v['error']['description']
+					end
+				end
+
+				unless status
+					if result_msgs.include?('link button not pressed')
+						raise LinkButtonError.new
+					else
+						raise StandardError.new(result_msgs.join(', '))
+					end
+				end
+			end
+
+			return j
 		end
 
 		# Makes a GET request to the given path, timing out after the
