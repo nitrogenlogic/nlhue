@@ -160,6 +160,11 @@ module NLHue
 			return j
 		end
 
+		# "Hue Bridge: [IP]: [Friendly Name] ([serial])"
+		def to_s
+			"Hue Bridge: #{@addr}: #{@name} (#{@serial})"
+		end
+
 		# Makes a GET request to the given path, timing out after the
 		# given number of seconds, and calling the given block with a
 		# hash containing :content, :headers, and :status, or just
