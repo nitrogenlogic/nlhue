@@ -43,7 +43,7 @@ module NLHue
 			end
 		end
 
-		# Makes a get request to the given path, timing out after the
+		# Makes a GET request to the given path, timing out after the
 		# given number of seconds, and calling the given block with a
 		# hash containing :content, :headers, and :status, or just
 		# false if there was an error.
@@ -59,7 +59,53 @@ module NLHue
 				yield response
 			}
 			req.errback {
-				req.close_connection
+				req.close_connection # For timeout
+				yield false
+			}
+			req.timeout 5
+		end
+
+		# Makes a POST request to the given path, with the given data
+		# and content type, timing out after the given number of
+		# seconds, and calling the given block with a hash containing
+		# :content, :headers, and :status, or just false if there was
+		# an error.
+		def post path, data, content_type='application/json;charset=utf-8', timeout=5, &block
+			req = EM::P::HttpClient.request(
+				verb: 'POST',
+				host: @addr,
+				request: path,
+				content: data,
+				contenttype: content_type,
+			)
+			req.callback {|response|
+				yield response
+			}
+			req.errback {
+				req.close_connection # For timeout
+				yield false
+			}
+			req.timeout 5
+		end
+
+		# Makes a PUT request to the given path, with the given data
+		# and content type, timing out after the given number of
+		# seconds, and calling the given block with a hash containing
+		# :content, :headers, and :status, or just false if there was
+		# an error.
+		def put path, data, content_type='application/json;charset=utf-8', timeout=5, &block
+			req = EM::P::HttpClient.request(
+				verb: 'PUT',
+				host: @addr,
+				request: path,
+				content: data,
+				contenttype: content_type,
+			)
+			req.callback {|response|
+				yield response
+			}
+			req.errback {
+				req.close_connection # For timeout
 				yield false
 			}
 			req.timeout 5
