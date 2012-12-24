@@ -7,6 +7,12 @@ require 'rexml/document'
 require 'json'
 
 module NLHue
+	class LinkButtonError < StandardError
+		def initialize msg="Press the bridge's link button."
+			super msg
+		end
+	end
+
 	# A class representing a Hue bridge.  A Bridge object may not refer to
 	# an actual Hue bridge if verify() hasn't succeeded.
 	class Bridge
@@ -46,30 +52,45 @@ module NLHue
 
 		# Attempts to register the given username with the Bridge.  The
 		# block will be called with true and the result if registration
-		# succeeds, false and the result (if any) if not.
+		# succeeds, false and an exception if not.
 		def register username, devicetype, &block
 			raise 'Username must be >= 10 characters' unless username.to_s.length >= 10
 			raise 'Spaces are not permitted in usernames' if username =~ /[[:space:]]/
 
 			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
 			puts "Sending #{msg}"
-			post '/api', msg, do |result|
-				puts "Register result: #{result.inspect}" # XXX
+			post '/api', msg, do |response|
+				puts "Register response: #{response.inspect}" # XXX
 
-				if result.is_a?(Hash) && result[:status] == 200
-					j = JSON.parse result[:content]
+				result_msgs = []
+				status = true
+				result = response
+				if response.is_a?(Hash) && response[:status] == 200
+					j = JSON.parse response[:content]
 					status = true
 					j.each do |v|
 						if v['error']; then
 							status = false
+							result_msgs << v['error']['description']
 						end
 					end
+
 					# TODO: Handle an invalid username that results in a new username being created
 
-					yield status, result
+					# FIXME: I don't like this error handling
+					unless status
+						if result_msgs.include?('link button not pressed')
+							result = LinkButtonError.new
+						else
+							result = StandardError.new(msg.join(', '))
+						end
+					end
 				else
-					yield false, result
+					status = false
+					result = StandardError.new response
 				end
+
+				yield status, result
 			end
 		end
 
