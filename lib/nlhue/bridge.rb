@@ -101,19 +101,7 @@ module NLHue
 		def get path, timeout=5, &block
 			# FIXME: Use em-http-request instead of HttpClient,
 			# which returns an empty :content field
-			req = EM::P::HttpClient.request(
-				verb: 'GET',
-				host: @addr,
-				request: path
-			)
-			req.callback {|response|
-				yield response
-			}
-			req.errback {
-				req.close_connection # For timeout
-				yield false
-			}
-			req.timeout 5
+			request 'GET', path, nil, nil, timeout, &block
 		end
 
 		# Makes a POST request to the given path, with the given data
@@ -122,21 +110,7 @@ module NLHue
 		# :content, :headers, and :status, or just false if there was
 		# an error.
 		def post path, data, content_type='application/json;charset=utf-8', timeout=5, &block
-			req = EM::P::HttpClient.request(
-				verb: 'POST',
-				host: @addr,
-				request: path,
-				content: data,
-				contenttype: content_type,
-			)
-			req.callback {|response|
-				yield response
-			}
-			req.errback {
-				req.close_connection # For timeout
-				yield false
-			}
-			req.timeout 5
+			request 'POST', path, data, content_type, timeout, &block
 		end
 
 		# Makes a PUT request to the given path, with the given data
@@ -145,8 +119,26 @@ module NLHue
 		# :content, :headers, and :status, or just false if there was
 		# an error.
 		def put path, data, content_type='application/json;charset=utf-8', timeout=5, &block
+			request 'PUT', path, data, content_type, timeout, &block
+		end
+
+		# Makes a DELETE request to the given path, timing out after
+		# the given number of seconds, and calling the given block with
+		# a hash containing :content, :headers, and :status, or just
+		# false if there was an error.
+		def delete path, timeout=5, &block
+			request 'DELETE', path, nil, nil, timeout, &block
+		end
+
+		# Makes a request of the given type to the given path, using
+		# the given data and content type for e.g. PUT and POST.  The
+		# request will time out after timeout seconds.  The given block
+		# will be called with a hash containing :content, :headers, and
+		# :status if a response was received, or just false on error.
+		def request verb, path, data=nil, content_type='application/json;charset=utf-8', timeout=5, &block
+			raise 'A block must be given.' unless block_given?
 			req = EM::P::HttpClient.request(
-				verb: 'PUT',
+				verb: verb,
 				host: @addr,
 				request: path,
 				content: data,
