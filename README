@@ -4,3 +4,13 @@ Yet another Ruby library for interfacing with the Philips Hue lighting system.
 This library was created because many of the other fine Ruby Hue libraries
 lacked a clear license agreement, were only partially implemented, and/or
 required far too many third-party Gems for my use.
+
+Useful command-line stuff:
+alias off='curl -X PUT -d '\''{"on":false}'\'' http://192.168.6.109/api/testing1234/lights/2/state ; echo'
+alias on='curl -X PUT -d '\''{"on":true}'\'' http://192.168.6.109/api/testing1234/lights/2/state ; echo'
+alias pink='curl -X PUT -d '\''{"hue":58000,"sat":254,"bri":254,"transitiontime":0}'\'' http://192.168.6.109/api/testing1234/lights/2/state ; echo'
+alias purple='curl -X PUT -d '\''{"hue":48400,"sat":254,"bri":254,"transitiontime":0}'\'' http://192.168.6.109/api/testing1234/lights/2/state ; echo'
+alias red='curl -X PUT -d '\''{"hue":0,"sat":254,"bri":254,"transitiontime":0}'\'' http://192.168.6.109/api/testing1234/lights/2/state ; echo'
+alias green='curl -X PUT -d '\''{"hue":21844,"sat":254,"bri":254,"transitiontime":0}'\'' http://192.168.6.109/api/testing1234/lights/2/state ; echo'
+alias blue='curl -X PUT -d '\''{"hue":46774,"sat":254,"bri":254,"transitiontime":0}'\'' http://192.168.6.109/api/testing1234/lights/2/state ; echo'
+hue() { M="{\"hue\":$(($1 * 182)),\"sat\":254,\"bri\":254,\"transitiontime\":10}" ; curl -X PUT -d "$M" http://192.168.6.109/api/testing1234/lights/2/state; echo; }
