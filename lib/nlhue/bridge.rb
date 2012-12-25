@@ -28,10 +28,14 @@ module NLHue
 	# A class representing a Hue bridge.  A Bridge object may not refer to
 	# an actual Hue bridge if verify() hasn't succeeded.
 	class Bridge
+		attr_reader :username
+
 		# addr - The IP address or hostname of the Hue bridge.
 		def initialize addr
 			@addr = addr
 			@verified = false
+			@username = 'invalid'
+			@lights = {}
 		end
 
 		# Calls the given block with true or false if verification by
@@ -92,6 +96,7 @@ module NLHue
 					result = e
 				end
 
+				@username = username if status
 				yield status, result
 			end
 		end
@@ -116,7 +121,55 @@ module NLHue
 
 				yield status, result
 			end
+		end
 
+		# Updates the Bridge object with the lights, groups, and config
+		# of the Hue bridge.  The given block will be called with true
+		# and the result on success, false and an exception on error.
+		def update &block
+			get "/api/#{@username}" do |response|
+				status = true
+				result = response
+
+				begin
+					result = check_json response
+					puts 'after check_json'
+					@config = result
+					@config['lights'].each do |id, info|
+						puts "Checking light #{id}, #{info}" # XXX
+						if @lights[id.to_i].is_a? Light
+							@lights[id.to_i].handle_json info
+						else
+							@lights[id.to_i] = Light.new(self, id, info)
+						end
+					end
+					puts 'after lights'
+					@lights.select do |id, light|
+						incl = @config['lights'].include? id.to_s
+						puts "Including light ID #{id}: #{incl}" # XXX
+						incl
+					end
+					puts 'after old lights'
+					# TODO: Groups, schedules
+				rescue => e
+					status = false
+					result = e
+				end
+
+				yield status, result
+			end
+		end
+
+		# Returns an array of Light objects representing the lights
+		# known to the Hue bridge.
+		def lights
+			@lights
+		end
+
+		# Sets the username used to interact with the bridge.
+		def username= username
+			check_username username
+			@username = username
 		end
 
 		# Throws errors if the given username is invalid (may not catch
@@ -139,10 +192,12 @@ module NLHue
 				result_msgs = []
 
 				j = JSON.parse response[:content]
-				j.each do |v|
-					if v['error'].is_a?(Hash); then
-						status = false
-						result_msgs << v['error']['description']
+				if j.is_a? Array
+					j.each do |v|
+						if v.is_a?(Hash) && v['error'].is_a?(Hash); then
+							status = false
+							result_msgs << v['error']['description']
+						end
 					end
 				end
 
@@ -160,9 +215,9 @@ module NLHue
 			return j
 		end
 
-		# "Hue Bridge: [IP]: [Friendly Name] ([serial])"
+		# "Hue Bridge: [IP]: [Friendly Name] ([serial]) - N lights"
 		def to_s
-			"Hue Bridge: #{@addr}: #{@name} (#{@serial})"
+			"Hue Bridge: #{@addr}: #{@name} (#{@serial}) - #{@lights.length} lights"
 		end
 
 		# Makes a GET request to the given path, timing out after the
@@ -173,6 +228,12 @@ module NLHue
 			# FIXME: Use em-http-request instead of HttpClient,
 			# which returns an empty :content field
 			request 'GET', path, nil, nil, timeout, &block
+		end
+
+		# Makes a GET request under the API using this Bridge's stored
+		# username.
+		def get_api subpath, &block
+			get "/api/#{@username}#{subpath}", &block
 		end
 
 		# Makes a POST request to the given path, with the given data

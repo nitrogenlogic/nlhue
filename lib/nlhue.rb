@@ -4,3 +4,4 @@
 require_relative 'nlhue/ssdp.rb'
 require_relative 'nlhue/disco.rb'
 require_relative 'nlhue/bridge.rb'
+require_relative 'nlhue/light.rb'
