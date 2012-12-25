@@ -255,6 +255,12 @@ module NLHue
 			request 'PUT', path, data, content_type, timeout, &block
 		end
 
+		# Makes a PUT request under the API using this Bridge's stored
+		# username.
+		def put_api subpath, data, content_type='application/json;charset=utf-8', &block
+			put "/api/#{@username}#{subpath}", data, content_type, &block
+		end
+
 		# Makes a DELETE request to the given path, timing out after
 		# the given number of seconds, and calling the given block with
 		# a hash containing :content, :headers, and :status, or just

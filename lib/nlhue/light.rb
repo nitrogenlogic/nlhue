@@ -55,5 +55,21 @@ module NLHue
 		def to_s
 			"Light: #{@id}: #{@name} (#{@type})"
 		end
+
+		def hue= hue
+			puts "Hue #{hue}"# XXX
+			hue = (hue * 65536 / 360).to_i % 65536
+			puts "Hue2 #{hue}" # XXX
+
+			@info['state']['hue'] = hue
+
+			@bridge.put_api "/lights/#{@id}/state", {'hue' => hue}.to_json do |status, result|
+				puts "Hue result: #{status}, #{result}" # XXX
+			end
+		end
+
+		def hue
+			@info['state']['hue']
+		end
 	end
 end
