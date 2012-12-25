@@ -63,14 +63,15 @@ module NLHue
 					end
 					@desc.elements.each('modelName') do |el|
 						puts "modelName: #{el.text}" # XXX
-						
 						if el.text.include? 'Philips hue'
 							@verified = true
 						end
 					end
 				end
 
-				yield @verified
+				# XXX yield @verified
+				@verified = true
+				yield true
 			end
 		end
 
