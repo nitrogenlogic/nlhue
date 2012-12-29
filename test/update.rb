@@ -19,6 +19,7 @@ EM.run do
 					puts "Light #{light} update: #{status}, #{result}"
 					puts result.backtrace if result.is_a? Exception
 
+					light.on!
 					light.hue = rand 360
 				end
 			end
