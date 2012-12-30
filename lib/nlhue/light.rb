@@ -119,6 +119,7 @@ module NLHue
 			ct = 254 if ct > 254
 
 			@info['state']['ct'] = ct.to_i
+			@info['state']['colormode'] = 'ct'
 
 			msg = { 'ct' => @info['state']['ct'] }
 
@@ -150,6 +151,7 @@ module NLHue
 			xy[1] = 1 if xy[1] > 1
 
 			@info['state']['xy'] = xy
+			@info['state']['colormode'] = 'xy'
 
 			msg = { 'ct' => @info['state']['xy'] }
 
@@ -176,7 +178,7 @@ module NLHue
 			puts "Hue2 #{hue}" # XXX
 
 			@info['state']['hue'] = hue
-			@info['state']['colormode'] = 'hue'
+			@info['state']['colormode'] = 'hs'
 
 			msg = {
 				'hue' => @info['state']['hue'],
@@ -202,7 +204,7 @@ module NLHue
 			sat = 255 if sat > 255
 
 			@info['state']['sat'] = sat.to_i
-			@info['state']['colormode'] = 'hue'
+			@info['state']['colormode'] = 'hs'
 
 			msg = {
 				'hue' => @info['state']['hue'],
