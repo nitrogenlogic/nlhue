@@ -109,6 +109,63 @@ module NLHue
 			@info['state']['bri']
 		end
 
+		# Switches the light into color temperature mode and sets the
+		# color temperature of the light in mireds (154-500 inclusive,
+		# where 154 is highest temperature (bluer), 500 is lowest
+		# temperature (yellower)).  The light must be on for this to
+		# work.
+		def ct= ct
+			ct = 154 if ct < 154
+			ct = 254 if ct > 254
+
+			@info['state']['ct'] = ct.to_i
+
+			msg = { 'ct' => @info['state']['ct'] }
+
+			put_light msg do |response|
+				# TODO: Update internal state using success response?
+				puts "Color temperature result: #{response}" # XXX
+			end
+		end
+
+		# The color temperature most recently set with ct=, or the last
+		# color temperature received from the light due to calling
+		# update() on the light or on the bridge.
+		def ct
+			@info['state']['ct']
+		end
+
+		# Switches the light into CIE XYZ color mode and sets the XY
+		# color coordinates to the given two-element array of floating
+		# point values between 0 and 1, inclusive.  The light must be
+		# on for this to work.
+		def xy= xy
+			unless xy.is_a?(Array) && xy.length == 2 && xy[0].is_a?(Numeric) && xy[1].is_a?(Numeric)
+				raise 'Pass a two-element array of numbers to xy=.'
+			end
+
+			xy[0] = 0 if xy[0] < 0
+			xy[0] = 1 if xy[0] > 1
+			xy[1] = 0 if xy[1] < 0
+			xy[1] = 1 if xy[1] > 1
+
+			@info['state']['xy'] = xy
+
+			msg = { 'ct' => @info['state']['xy'] }
+
+			put_light msg do |response|
+				puts "XY result: #{response}"
+			end
+		end
+
+		# The XY color coordinates most recently set with xy=, or the
+		# last color coordinates received from the light due to calling
+		# update() on the light or on the bridge.
+		def xy
+			@info['state']['xy']
+		end
+
+
 		# Switches the light into hue/saturation mode, and sets the
 		# light's hue to the given value (floating point degrees,
 		# wrapped to 0-360).  The light must already be switched on for
