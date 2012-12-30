@@ -221,6 +221,12 @@ module NLHue
 			"Hue Bridge: #{@addr}: #{@name} (#{@serial}) - #{@lights.length} lights"
 		end
 
+		# JSON object with "addr": [bridge address] and "config":
+		# [config JSON from bridge]
+		def to_json
+			{ :addr => @addr, :config => @config }.to_json
+		end
+
 		# Makes a GET request to the given path, timing out after the
 		# given number of seconds, and calling the given block with a
 		# hash containing :content, :headers, and :status, or just
