@@ -7,9 +7,8 @@ require 'rexml/document'
 require 'json'
 
 module NLHue
-	# A class representing a light known to a Hue bridge.
-	# A class representing a Hue bridge.  A Bridge object might not refer
-	# to an actual Hue bridge if verify() hasn't succeeded.
+	# A class representing a light known to a Hue bridge.  Recommended use
+	# is to get a Light object by calling NLHue::Bridge#lights().
 	class Light
 		attr_reader :id, :type, :name
 
@@ -167,7 +166,7 @@ module NLHue
 		end
 
 
-		# Switches the light into hue/saturation mode, and sets the
+		# Switches the light into hue/saturation mode and sets the
 		# light's hue to the given value (floating point degrees,
 		# wrapped to 0-360).  The light must already be switched on for
 		# this to work.
@@ -196,7 +195,7 @@ module NLHue
 			@info['state']['hue']
 		end
 
-		# Switches the light into hue/saturation mode, and sets the
+		# Switches the light into hue/saturation mode and sets the
 		# light's saturation to the given value (0-255 inclusive).
 		def sat= sat
 			sat = 0 if sat < 0
