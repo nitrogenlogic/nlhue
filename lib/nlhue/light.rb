@@ -87,13 +87,14 @@ module NLHue
 			self.on = false
 		end
 
-		# Sets the brightness of this light (0-254 inclusive).  Note
+		# Sets the brightness of this light (0-255 inclusive).  Note
 		# that a brightness of 0 is not off.  The light must already be
 		# switched on for this to work.
 		def bri= bri
-			raise 'Brightness must be between 0 and 254, inclusive.' unless bri >= 0 && bri <= 254
+			bri = 0 if bri < 0
+			bri = 255 if bri > 255
 
-			@info['state']['bri'] = bri
+			@info['state']['bri'] = bri.to_i
 
 			msg = { 'bri' => @info['state']['bri'] }
 
@@ -196,9 +197,10 @@ module NLHue
 		end
 
 		# Switches the light into hue/saturation mode, and sets the
-		# light's saturation to the given value (0-254 inclusive).
+		# light's saturation to the given value (0-255 inclusive).
 		def sat= sat
-			raise 'Saturation must be between 0 and 254, inclusive.' unless sat >= 0 && sat <= 254
+			sat = 0 if sat < 0
+			sat = 255 if sat > 255
 
 			@info['state']['sat'] = sat.to_i
 			@info['state']['colormode'] = 'hue'
