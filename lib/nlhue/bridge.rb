@@ -153,6 +153,9 @@ module NLHue
 						incl
 					end
 					puts 'after old lights'
+
+					@name ||= @config['config']['name']
+					@serial ||= @config['config']['mac'].gsub(':', '')
 					# TODO: Groups, schedules
 				rescue => e
 					status = false
