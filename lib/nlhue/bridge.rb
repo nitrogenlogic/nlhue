@@ -28,13 +28,15 @@ module NLHue
 	# A class representing a Hue bridge.  A Bridge object may not refer to
 	# an actual Hue bridge if verify() hasn't succeeded.
 	class Bridge
-		attr_reader :username
+		attr_reader :username, :addr, :serial, :name
 
 		# addr - The IP address or hostname of the Hue bridge.
 		def initialize addr
 			@addr = addr
 			@verified = false
 			@username = 'invalid'
+			@serial = nil
+			@name = nil
 			@lights = {}
 		end
 
@@ -167,6 +169,11 @@ module NLHue
 			@lights
 		end
 
+		# The number of lights known to this bridge.
+		def num_lights
+			@lights.length
+		end
+
 		# Sets the username used to interact with the bridge.
 		def username= username
 			check_username username
@@ -224,7 +231,7 @@ module NLHue
 		# JSON object with "addr": [bridge address] and "config":
 		# [config JSON from bridge]
 		def to_json
-			{ :addr => @addr, :config => @config }.to_json
+			{ :addr => @addr, :name => @name, :serial => @serial, :config => @config }.to_json
 		end
 
 		# Makes a GET request to the given path, timing out after the
