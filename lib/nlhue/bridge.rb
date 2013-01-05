@@ -86,7 +86,7 @@ module NLHue
 
 			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
 			puts "Sending #{msg}" # XXX
-			post '/api', msg, do |response|
+			post '/api', msg do |response|
 				puts "Register response: #{response.inspect}" # XXX
 
 				status = true
