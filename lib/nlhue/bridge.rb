@@ -31,14 +31,20 @@ module NLHue
 		attr_reader :username, :addr, :serial, :name
 
 		# addr - The IP address or hostname of the Hue bridge.
-		def initialize addr
+		# serial - The serial number of the bridge, if available
+		# 	   (parsed from the USN header in a UPnP response)
+		def initialize addr, serial = nil
 			@addr = addr
 			@verified = false
 			@username = 'invalid'
-			@serial = nil
 			@name = nil
 			@config = nil
 			@lights = {}
+			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
+				@serial = serial
+			else
+				@serial = nil
+			end
 		end
 
 		# Calls the given block with true or false if verification by

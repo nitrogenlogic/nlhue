@@ -12,9 +12,10 @@ module NLHue
 		devs = {}
 
 		NLHue::SSDP.discover 'upnp:rootdevice' do |ssdp|
-			if ssdp && ssdp['Location'].include?('description.xml')
+			if ssdp && ssdp['Location'].include?('description.xml') && ssdp['USN']
 				unless devs.include? ssdp.ip
-					dev = Bridge.new ssdp.ip
+					serial = ssdp['USN'].gsub(/.*([0-9A-Fa-f]{12}).*/, '\1')
+					dev = Bridge.new ssdp.ip, serial
 					dev.verify do |result|
 						if result
 							devs[ssdp.ip] = dev
