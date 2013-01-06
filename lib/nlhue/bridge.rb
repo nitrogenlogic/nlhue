@@ -37,6 +37,7 @@ module NLHue
 			@username = 'invalid'
 			@serial = nil
 			@name = nil
+			@config = nil
 			@lights = {}
 		end
 
@@ -169,6 +170,10 @@ module NLHue
 
 				yield status, result
 			end
+		end
+
+		def updated?
+			@config.is_a? Hash
 		end
 
 		# Returns an array of Light objects representing the lights
