@@ -57,12 +57,12 @@ module NLHue
 					@desc = REXML::Document.new result[:content]
 					@desc.write($stdout, 4, true) # XXX
 					@desc.elements.each('friendlyName') do |el|
-						@name = el.text
-						puts "Friendly name: #{@name}"
+						puts "Friendly name: #{@name}" # XXX
+						set_name el.text
 					end
 					@desc.elements.each('serialNumber') do |el|
+						puts "Serial number: #{@serial}" # XXX
 						@serial = el.text
-						puts "Serial number: #{@serial}"
 					end
 					@desc.elements.each('modelName') do |el|
 						puts "modelName: #{el.text}" # XXX
@@ -160,8 +160,9 @@ module NLHue
 					end
 					puts 'after old lights'
 
-					@name ||= @config['config']['name']
+					set_name @config['config']['name'] unless @name
 					@serial ||= @config['config']['mac'].gsub(':', '')
+
 					# TODO: Groups, schedules
 				rescue => e
 					status = false
@@ -317,6 +318,13 @@ module NLHue
 				yield false
 			}
 			req.timeout 5
+		end
+
+		private
+		# Sets this bridge's name (call after getting UPnP XML or
+		# bridge config JSON), removing the IP address if present.
+		def set_name name
+			@name = name.gsub " (#{@addr})", ''
 		end
 	end
 end
