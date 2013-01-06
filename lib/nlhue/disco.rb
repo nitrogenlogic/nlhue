@@ -17,8 +17,12 @@ module NLHue
 					dev = Bridge.new ssdp.ip
 					dev.verify do |result|
 						if result
-							yield dev
 							devs[ssdp.ip] = dev
+							begin
+								yield dev
+							rescue => e
+								puts "Error notifying block with discovered bridge: #{e}", e.backtrace
+							end
 						end
 					end
 				end

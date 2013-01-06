@@ -73,7 +73,12 @@ module NLHue
 
 				# XXX yield @verified
 				@verified = true
-				yield true
+				begin
+					yield true
+				rescue => e
+					# TODO: Use a user-provided logging facility?
+					puts "Error notifying block after verification: #{e}", e.backtrace
+				end
 			end
 		end
 
