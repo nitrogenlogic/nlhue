@@ -134,6 +134,8 @@ module NLHue
 					result = e
 				end
 
+				@config = nil if @username == username && status
+
 				yield status, result
 			end
 		end
