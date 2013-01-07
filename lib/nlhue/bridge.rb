@@ -41,7 +41,7 @@ module NLHue
 			@config = nil
 			@lights = {}
 			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
-				@serial = serial
+				@serial = serial.downcase
 			else
 				@serial = nil
 			end
@@ -68,7 +68,7 @@ module NLHue
 					end
 					@desc.elements.each('serialNumber') do |el|
 						puts "Serial number: #{@serial}" # XXX
-						@serial = el.text
+						@serial = el.text.downcase
 					end
 					@desc.elements.each('modelName') do |el|
 						puts "modelName: #{el.text}" # XXX
@@ -169,7 +169,7 @@ module NLHue
 					puts 'after old lights'
 
 					set_name @config['config']['name'] unless @name
-					@serial ||= @config['config']['mac'].gsub(':', '')
+					@serial ||= @config['config']['mac'].gsub(':', '').downcase
 
 					# TODO: Groups, schedules
 				rescue => e
