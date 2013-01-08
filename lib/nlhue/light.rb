@@ -224,6 +224,12 @@ module NLHue
 			@info['state']['sat'].to_i
 		end
 
+		# Returns the light's current color mode ('ct' for color
+		# temperature, 'hs' for hue/saturation, 'xy' for CIE XYZ).
+		def colormode
+			@info['state']['colormode']
+		end
+
 		# PUTs the given Hash or Array, converted to JSON, to this
 		# light's API endpoint.  The given block will be called as
 		# described for NLHue::Bridge#put_api().
