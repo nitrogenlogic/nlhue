@@ -98,10 +98,7 @@ module NLHue
 			check_username username
 
 			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
-			puts "Sending #{msg}" # XXX
 			post '/api', msg do |response|
-				puts "Register response: #{response.inspect}" # XXX
-
 				status = true
 				result = response
 
@@ -123,8 +120,6 @@ module NLHue
 			check_username username
 
 			delete "/api/#{username}/config/whitelist/#{username}" do |response|
-				puts "Unregister response: #{response.inspect}" # XXX
-
 				status = true
 				result = response
 
@@ -151,23 +146,18 @@ module NLHue
 
 				begin
 					result = check_json response
-					puts 'after check_json'
 					@config = result
 					@config['lights'].each do |id, info|
-						puts "Checking light #{id}, #{info}" # XXX
 						if @lights[id.to_i].is_a? Light
 							@lights[id.to_i].handle_json info
 						else
 							@lights[id.to_i] = Light.new(self, id, info)
 						end
 					end
-					puts 'after lights'
 					@lights.select do |id, light|
 						incl = @config['lights'].include? id.to_s
-						puts "Including light ID #{id}: #{incl}" # XXX
 						incl
 					end
-					puts 'after old lights'
 
 					set_name @config['config']['name'] unless @name
 					@serial ||= @config['config']['mac'].gsub(':', '').downcase
