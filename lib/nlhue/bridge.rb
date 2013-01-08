@@ -92,10 +92,19 @@ module NLHue
 
 		# Attempts to register the given username with the Bridge.  The
 		# block will be called with true and the result if registration
-		# succeeds, false and an exception if not.
+		# succeeds, false and an exception if not.  If the username is
+		# the current username assigned to this Bridge object, and it
+		# already appears to be registered, it will not be
+		# re-registered, and the block will be called with true and a
+		# message.
 		def register username, devicetype, &block
 			raise NotVerifiedError.new unless @verified
 			check_username username
+
+			if username == @username && @registered
+				yield true, 'Already registered.'
+				return
+			end
 
 			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
 			post '/api', msg do |response|
