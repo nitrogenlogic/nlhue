@@ -106,7 +106,7 @@ module NLHue
 		# brightness received from the light due to calling update() on
 		# the light or on the bridge.
 		def bri
-			@info['state']['bri']
+			@info['state']['bri'].to_i
 		end
 
 		# Switches the light into color temperature mode and sets the
@@ -133,7 +133,7 @@ module NLHue
 		# color temperature received from the light due to calling
 		# update() on the light or on the bridge.
 		def ct
-			@info['state']['ct']
+			@info['state']['ct'].to_i
 		end
 
 		# Switches the light into CIE XYZ color mode and sets the XY
@@ -164,7 +164,8 @@ module NLHue
 		# last color coordinates received from the light due to calling
 		# update() on the light or on the bridge.
 		def xy
-			@info['state']['xy']
+			xy = @info['state']['xy']
+			[ xy[0].to_f, xy[1].to_f ]
 		end
 
 
@@ -194,7 +195,7 @@ module NLHue
 		# from the light due to calling update() on the light or on the
 		# bridge.
 		def hue
-			@info['state']['hue']
+			@info['state']['hue'].to_i
 		end
 
 		# Switches the light into hue/saturation mode and sets the
@@ -220,7 +221,7 @@ module NLHue
 		# last saturation received from the light due to calling
 		# update() on the light or on the bridge.
 		def sat
-			@info['state']['sat']
+			@info['state']['sat'].to_i
 		end
 
 		# PUTs the given Hash or Array, converted to JSON, to this
