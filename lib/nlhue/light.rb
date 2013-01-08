@@ -116,7 +116,7 @@ module NLHue
 		# work.
 		def ct= ct
 			ct = 154 if ct < 154
-			ct = 254 if ct > 254
+			ct = 500 if ct > 500
 
 			@info['state']['ct'] = ct.to_i
 			@info['state']['colormode'] = 'ct'
