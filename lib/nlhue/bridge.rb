@@ -39,6 +39,7 @@ module NLHue
 			@username = 'invalid'
 			@name = nil
 			@config = nil
+			@registered = false
 			@lights = {}
 			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
 				@serial = serial.downcase
@@ -134,7 +135,7 @@ module NLHue
 					result = e
 				end
 
-				@config = nil if @username == username && status
+				@registered = false if @username == username && status
 
 				yield status, result
 			end
@@ -171,6 +172,8 @@ module NLHue
 					set_name @config['config']['name'] unless @name
 					@serial ||= @config['config']['mac'].gsub(':', '').downcase
 
+					@registered = true
+
 					# TODO: Groups, schedules
 				rescue => e
 					status = false
@@ -183,6 +186,13 @@ module NLHue
 
 		def updated?
 			@config.is_a? Hash
+		end
+
+		# Returns whether the Bridge object believes it is registered
+		# with its associated Hue bridge.  Set to true when update
+		# succeeds, set to false if a NotRegisteredError occurs.
+		def registered?
+			@registered
 		end
 
 		# Returns an array of Light objects representing the lights
@@ -212,7 +222,8 @@ module NLHue
 		# Checks for a valid JSON-containing response from an HTTP
 		# request method, raises an error if invalid or no response.
 		# Does not consider non-200 HTTP response codes as errors.
-		# Returns the received JSON if no error occurred.
+		# Returns the received JSON if no error occurred.  Marks this
+		# bridge as not registered if there is a NotRegisteredError.
 		def check_json response
 			raise 'No response received.' if response == false
 
@@ -235,6 +246,7 @@ module NLHue
 					if result_msgs.include?('link button not pressed')
 						raise LinkButtonError.new
 					elsif result_msgs.include?('unauthorized user')
+						@registered = false
 						raise NotRegisteredError.new
 					else
 						raise StandardError.new(result_msgs.join(', '))
