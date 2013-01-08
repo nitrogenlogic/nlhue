@@ -197,7 +197,7 @@ module NLHue
 		# Returns an array of Light objects representing the lights
 		# known to the Hue bridge.
 		def lights
-			@lights
+			@lights.values
 		end
 
 		# The number of lights known to this bridge.
