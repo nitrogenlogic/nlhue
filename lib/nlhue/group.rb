@@ -27,13 +27,14 @@ module NLHue
 			@lights = Set.new
 			@changes = {}
 			@defer = false
+			@info = {'action' => {'xy' => [0.5, 0.5]}, 'lights' => []}
 			handle_json info
 		end
 
 		# Updates this group's name and membership with the given Hash
 		# parsed from the bridge's JSON.
 		def handle_json info
-			@info = info
+			@info = info if info
 			@name = info ? info['name'] :
 				@name ? @name :
 				"Lightset #{id}"
@@ -173,6 +174,34 @@ module NLHue
 		# The color temperature most recently set with ct=.
 		def ct
 			@info['action']['ct'].to_i
+		end
+
+		# Switches the group into CIE XYZ color mode and sets the X
+		# color coordinate to the given floating point value between 0
+		# and 1, inclusive.  Note that the Y coordinate assigned to the
+		# group will be undefined unless y= or xy= is also called.  The
+		# group's lights must be on for this to work.
+		def x= x
+			self.xy = [ x, @info['action']['xy'][1] ]
+		end
+
+		# The X color coordinate most recently set with x= or xy=.
+		def x
+			@info['action']['xy'][0].to_f
+		end
+
+		# Switches the group into CIE XYZ color mode and sets the Y
+		# color coordinate to the given floating point value between 0
+		# and 1, inclusive.  Note that the X coordinate assigned to the
+		# group will be undefined unless x= or xy= is also called.  The
+		# group's lights must be on for this to work.
+		def y= y
+			self.xy = [ @info['action']['xy'][0], y ]
+		end
+
+		# The Y color coordinate most recently set with y= or xy=.
+		def y
+			@info['action']['xy'][1].to_f
 		end
 
 		# Switches the group into CIE XYZ color mode and sets the XY
