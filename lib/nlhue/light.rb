@@ -93,12 +93,10 @@ module NLHue
 
 		# Sets the light's alert status to the given string (one of
 		# 'select' (flash once), 'lselect' (flash several times), or
-		# 'none' (stop flashing)).  Any other value will be ignored.
+		# 'none' (stop flashing)).  Any other value may result in an
+		# error from the bridge.
 		def alert= alert
-			case alert
-			when 'none', 'select', 'lselect'
-				set({ 'alert' => alert })
-			end
+			set({ 'alert' => alert })
 		end
 
 		# Returns the current alert state of the light (or the stored
