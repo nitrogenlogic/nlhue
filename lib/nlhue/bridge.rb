@@ -108,17 +108,10 @@ module NLHue
 
 			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
 			post '/api', msg do |response|
-				status = true
-				result = response
-
-				begin
-					result = check_json response
-				rescue => e
-					status = false
-					result = e
-				end
+				status, result = check_json response
 
 				@username = username if status
+
 				yield status, result
 			end
 		end
@@ -129,15 +122,7 @@ module NLHue
 			check_username username
 
 			delete "/api/#{username}/config/whitelist/#{username}" do |response|
-				status = true
-				result = response
-
-				begin
-					result = check_json response
-				rescue => e
-					status = false
-					result = e
-				end
+				status, result = check_json response
 
 				@registered = false if @username == username && status
 
@@ -150,30 +135,30 @@ module NLHue
 		# and the result on success, false and an exception on error.
 		def update &block
 			get "/api/#{@username}" do |response|
-				status = true
-				result = response
+				status, result = check_json response
 
 				begin
-					result = check_json response
-					@config = result
-					@config['lights'].each do |id, info|
-						if @lights[id.to_i].is_a? Light
-							@lights[id.to_i].handle_json info
-						else
-							@lights[id.to_i] = Light.new(self, id, info)
+					if status
+						@config = result
+						@config['lights'].each do |id, info|
+							if @lights[id.to_i].is_a? Light
+								@lights[id.to_i].handle_json info
+							else
+								@lights[id.to_i] = Light.new(self, id, info)
+							end
 						end
+						@lights.select do |id, light|
+							incl = @config['lights'].include? id.to_s
+							incl
+						end
+
+						set_name @config['config']['name'] unless @name
+						@serial ||= @config['config']['mac'].gsub(':', '').downcase
+
+						@registered = true
+
+						# TODO: Groups, schedules
 					end
-					@lights.select do |id, light|
-						incl = @config['lights'].include? id.to_s
-						incl
-					end
-
-					set_name @config['config']['name'] unless @name
-					@serial ||= @config['config']['mac'].gsub(':', '').downcase
-
-					@registered = true
-
-					# TODO: Groups, schedules
 				rescue => e
 					status = false
 					result = e
@@ -219,41 +204,49 @@ module NLHue
 		end
 
 		# Checks for a valid JSON-containing response from an HTTP
-		# request method, raises an error if invalid or no response.
+		# request method, returns an error if invalid or no response.
 		# Does not consider non-200 HTTP response codes as errors.
-		# Returns the received JSON if no error occurred.  Marks this
+		# Returns true and the received JSON if no error occurred, or
+		# false and an exception if an error did occur.  Marks this
 		# bridge as not registered if there is a NotRegisteredError.
 		def check_json response
-			raise 'No response received.' if response == false
+			status = false
+			result = nil
 
-			j = nil
-			if response.is_a?(Hash)
-				status = true
-				result_msgs = []
+			begin
+				raise 'No response received.' if response == false
 
-				j = JSON.parse response[:content]
-				if j.is_a? Array
-					j.each do |v|
-						if v.is_a?(Hash) && v['error'].is_a?(Hash); then
-							status = false
-							result_msgs << v['error']['description']
+				if response.is_a?(Hash)
+					status = true
+					result_msgs = []
+
+					result = JSON.parse response[:content]
+					if result.is_a? Array
+						result.each do |v|
+							if v.is_a?(Hash) && v['error'].is_a?(Hash); then
+								status = false
+								result_msgs << v['error']['description']
+							end
+						end
+					end
+
+					unless status
+						if result_msgs.include?('link button not pressed')
+							raise LinkButtonError.new
+						elsif result_msgs.include?('unauthorized user')
+							@registered = false
+							raise NotRegisteredError.new
+						else
+							raise StandardError.new(result_msgs.join(', '))
 						end
 					end
 				end
-
-				unless status
-					if result_msgs.include?('link button not pressed')
-						raise LinkButtonError.new
-					elsif result_msgs.include?('unauthorized user')
-						@registered = false
-						raise NotRegisteredError.new
-					else
-						raise StandardError.new(result_msgs.join(', '))
-					end
-				end
+			rescue => e
+				status = false
+				result = e
 			end
 
-			return j
+			return status, result
 		end
 
 		# "Hue Bridge: [IP]: [Friendly Name] ([serial]) - N lights"

@@ -27,6 +27,7 @@ module NLHue
 		# light info from the bridge (either /api/XXX or
 		# /api/XXX/lights/ID).
 		def handle_json info
+			raise "Light info must be a Hash, not #{info.class}." unless info.is_a?(Hash)
 			@info = info
 			@type = info['type']
 			@name = info['name']
@@ -36,14 +37,12 @@ module NLHue
 		# Gets the current state of this light from the bridge.
 		def update &block
 			@bridge.get_api "/lights/#{@id}" do |response|
-				# TODO: Move this pattern into a helper function
 				puts "Light update response: #{response}" # XXX
 
-				status = true
-				result = response
+				status, result = @bridge.check_json(response)
 
 				begin
-					handle_json @bridge.check_json(response)
+					handle_json result
 				rescue => e
 					status = false
 					result = e
