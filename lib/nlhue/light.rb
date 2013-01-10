@@ -5,6 +5,7 @@ require 'eventmachine'
 require 'em/protocols/httpclient'
 require 'rexml/document'
 require 'json'
+require 'set'
 
 module NLHue
 	# A class representing a light known to a Hue bridge.  Recommended use
@@ -18,6 +19,7 @@ module NLHue
 		def initialize bridge, id, info
 			@bridge = bridge
 			@id = id
+			@changes = Set.new
 			handle_json info
 		end
 
@@ -28,7 +30,7 @@ module NLHue
 			@info = info
 			@type = info['type']
 			@name = info['name']
-			# TODO: Hue/sat/bri/ct/etc.
+			@info['id'] = @id
 		end
 
 		# Gets the current state of this light from the bridge.
@@ -56,17 +58,50 @@ module NLHue
 			"Light: #{@id}: #{@name} (#{@type})"
 		end
 
+		# Returns a copy of the hash representing the light's state as
+		# parsed from the JSON returned by the bridge.
+		def to_h
+			@info.clone
+		end
+
+		# Call to queue changes to be sent all at once.  Updates will
+		# no longer be sent to the light until send is called, after
+		# which changes will no longer be deferred.
+		def defer
+			@defer = true
+		end
+
+		# Sends all changes queued since the last call to defer.  The
+		# block, if given, will be called with the response from the
+		# bridge.
+		def send &block
+			send_changes &block
+			@defer = false
+		end
+
+		# Sets the light to flash once if repeat is false, or several
+		# times if repeat is true.
+		def alert! repeat=false
+			set({ 'alert' => repeat ? 'select' : 'lselect' })
+		end
+
+		# Stops any existing flashing of the light.
+		def clear_alert
+			set({ 'alert' => 'none' })
+		end
+
+		# Returns the current alert state of the light (or the stored
+		# state if defer() was called, but send() has not yet been
+		# called).
+		def alert
+			@info['state']['alert']
+		end
+
 		# Sets the on/off state of this light (true or false).  The
 		# light must be turned on before other parameters can be
 		# changed.
 		def on= on
-			@info['state']['on'] = !!on
-
-			msg = { 'on' => @info['state']['on'] }
-
-			put_light msg do |response|
-				puts "On/off result: #{response}"
-			end
+			set({ 'on' => !!on })
 		end
 
 		# The light state most recently set with on=, on!() or off!(),
@@ -93,13 +128,7 @@ module NLHue
 			bri = 0 if bri < 0
 			bri = 255 if bri > 255
 
-			@info['state']['bri'] = bri.to_i
-
-			msg = { 'bri' => @info['state']['bri'] }
-
-			put_light msg do |response|
-				puts "Brightness result: #{response}" # XXX
-			end
+			set({ 'bri' => bri.to_i })
 		end
 
 		# The brightness most recently set with bri=, or the last
@@ -118,15 +147,7 @@ module NLHue
 			ct = 154 if ct < 154
 			ct = 500 if ct > 500
 
-			@info['state']['ct'] = ct.to_i
-			@info['state']['colormode'] = 'ct'
-
-			msg = { 'ct' => @info['state']['ct'] }
-
-			put_light msg do |response|
-				# TODO: Update internal state using success response?
-				puts "Color temperature result: #{response}" # XXX
-			end
+			set({ 'ct' => ct.to_i, 'colormode' => 'ct' })
 		end
 
 		# The color temperature most recently set with ct=, or the last
@@ -150,14 +171,7 @@ module NLHue
 			xy[1] = 0 if xy[1] < 0
 			xy[1] = 1 if xy[1] > 1
 
-			@info['state']['xy'] = xy
-			@info['state']['colormode'] = 'xy'
-
-			msg = { 'ct' => @info['state']['xy'] }
-
-			put_light msg do |response|
-				puts "XY result: #{response}"
-			end
+			set({ 'xy' => xy, 'colormode' => 'xy' })
 		end
 
 		# The XY color coordinates most recently set with xy=, or the
@@ -168,7 +182,6 @@ module NLHue
 			[ xy[0].to_f, xy[1].to_f ]
 		end
 
-
 		# Switches the light into hue/saturation mode and sets the
 		# light's hue to the given value (floating point degrees,
 		# wrapped to 0-360).  The light must already be switched on for
@@ -178,17 +191,7 @@ module NLHue
 			hue = (hue * 65536 / 360).to_i & 65535
 			puts "Hue2 #{hue}" # XXX
 
-			@info['state']['hue'] = hue
-			@info['state']['colormode'] = 'hs'
-
-			msg = {
-				'hue' => @info['state']['hue'],
-				'sat' => @info['state']['sat'],
-			}
-
-			put_light msg do |response|
-				puts "Hue result: #{response}" # XXX
-			end
+			set({ 'hue' => hue, 'colormode' => 'hs' })
 		end
 
 		# The hue most recently set with hue=, or the last hue received
@@ -204,17 +207,7 @@ module NLHue
 			sat = 0 if sat < 0
 			sat = 255 if sat > 255
 
-			@info['state']['sat'] = sat.to_i
-			@info['state']['colormode'] = 'hs'
-
-			msg = {
-				'hue' => @info['state']['hue'],
-				'sat' => @info['state']['sat'],
-			}
-
-			put_light msg do |response|
-				puts "Sat result: #{response}" # XXX
-			end
+			set({ 'sat' => sat.to_i, 'colormode' => 'hs' })
 		end
 
 		# The saturation most recently set with saturation=, or the
@@ -228,6 +221,48 @@ module NLHue
 		# temperature, 'hs' for hue/saturation, 'xy' for CIE XYZ).
 		def colormode
 			@info['state']['colormode']
+		end
+
+		private
+		# Sets one or more parameters on the local light, then sends
+		# them to the bridge (unless defer was called).
+		def set params
+			params.each do |k, v|
+				@changes << k
+				@info['state'][k] = v
+			end
+
+			send_changes unless @defer
+		end
+
+		# Sends parameters named in @changes to the bridge.
+		def send_changes &block
+			msg = {}
+
+			@changes.each do |param|
+				case param
+				when 'colormode'
+					case @info['state']['colormode']
+					when 'hs'
+						msg['hue'] = @info['state']['hue']
+						msg['sat'] = @info['state']['sat']
+					when 'xy'
+						msg['xy'] = @info['state']['xy']
+					when 'ct'
+						msg['ct'] = @info['state']['ct']
+					end
+
+				when 'bri', 'on', 'alert'
+					msg[param] = @info['state'][param]
+				end
+			end
+			@changes.clear
+
+			put_light msg do |response|
+				# TODO: Update internal state using success response?
+				puts "Changes response: #{response}" # XXX
+				yield response if block_given?
+			end
 		end
 
 		# PUTs the given Hash or Array, converted to JSON, to this
