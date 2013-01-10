@@ -296,8 +296,8 @@ module NLHue
 				when 'colormode'
 					case @info['state']['colormode']
 					when 'hs'
-						msg['hue'] = @info['state']['hue']
-						msg['sat'] = @info['state']['sat']
+						msg['hue'] = @info['state']['hue'] if @changes.include? 'hue'
+						msg['sat'] = @info['state']['sat'] if @changes.include? 'sat'
 					when 'xy'
 						msg['xy'] = @info['state']['xy']
 					when 'ct'
