@@ -235,7 +235,7 @@ module NLHue
 		# from the light due to calling update() on the light or on the
 		# bridge.
 		def hue
-			@info['state']['hue'].to_i
+			@info['state']['hue'].to_i * 360 / 65536.0
 		end
 
 		# Switches the light into hue/saturation mode and sets the
