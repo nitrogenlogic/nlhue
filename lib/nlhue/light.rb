@@ -168,6 +168,32 @@ module NLHue
 			@info['state']['ct'].to_i
 		end
 
+		# Switches the light into CIE XYZ color mode and sets the X
+		# color coordinate to the given floating point value between 0
+		# and 1, inclusive.  The light must be on for this to work.
+		def x= x
+			self.xy = [ x, @info['state']['xy'][1] ]
+		end
+
+		# The X color coordinate most recently set with x= or xy=, or
+		# the last X color coordinate received from the light.
+		def x
+			@info['state']['xy'][0].to_f
+		end
+
+		# Switches the light into CIE XYZ color mode and sets the Y
+		# color coordinate to the given floating point value between 0
+		# and 1, inclusive.  The light must be on for this to work.
+		def y= y
+			self.xy = [ @info['state']['xy'][0], y ]
+		end
+
+		# The Y color coordinate most recently set with y= or xy=, or
+		# the last Y color coordinate received from the light.
+		def y
+			@info['state']['xy'][1].to_f
+		end
+
 		# Switches the light into CIE XYZ color mode and sets the XY
 		# color coordinates to the given two-element array of floating
 		# point values between 0 and 1, inclusive.  The light must be
@@ -185,9 +211,9 @@ module NLHue
 			set({ 'xy' => xy, 'colormode' => 'xy' })
 		end
 
-		# The XY color coordinates most recently set with xy=, or the
-		# last color coordinates received from the light due to calling
-		# update() on the light or on the bridge.
+		# The XY color coordinates most recently set with x=, y=, or
+		# xy=, or the last color coordinates received from the light
+		# due to calling update() on the light or on the bridge.
 		def xy
 			xy = @info['state']['xy']
 			[ xy[0].to_f, xy[1].to_f ]
