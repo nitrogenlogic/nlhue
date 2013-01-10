@@ -25,7 +25,7 @@ module NLHue
 			@id = id
 			@name = nil
 			@lights = Set.new
-			@changes = {}
+			@changes = Set.new
 			@defer = false
 			@info = {'action' => {'xy' => [0.5, 0.5]}, 'lights' => []}
 			handle_json info
