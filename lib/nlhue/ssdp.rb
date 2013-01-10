@@ -10,6 +10,8 @@ module NLHue
 		SSDP_ADDR = '239.255.255.250'
 		SSDP_PORT = 1900
 
+		# TODO: Support passive discovery of other devices' announcements
+
 		# Eventually calls the given block with a NLHue::SSDP::Response
 		# for each matching device found on the network within timeout
 		# seconds.  The block will be called with nil after the
