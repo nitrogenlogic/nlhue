@@ -34,7 +34,9 @@ module NLHue
 			@info['id'] = @id
 		end
 
-		# Gets the current state of this light from the bridge.
+		# Gets the current state of this light from the bridge.  The
+		# block, if given, will be called with true and the response on
+		# success, or false and an Exception on error.
 		def update &block
 			@bridge.get_api "/lights/#{@id}" do |response|
 				puts "Light update response: #{response}" # XXX
@@ -48,7 +50,7 @@ module NLHue
 					result = e
 				end
 
-				yield status, result
+				yield status, result if block_given?
 			end
 		end
 
@@ -71,8 +73,8 @@ module NLHue
 		end
 
 		# Sends all changes queued since the last call to defer.  The
-		# block, if given, will be called with the response from the
-		# bridge.
+		# block, if given, will be called with true and the response on
+		# success, or false and an Exception on error.
 		def send &block
 			send_changes &block
 			@defer = false
@@ -234,7 +236,9 @@ module NLHue
 			send_changes unless @defer
 		end
 
-		# Sends parameters named in @changes to the bridge.
+		# Sends parameters named in @changes to the bridge.  The block,
+		# if given, will be called with true and the response, or false
+		# and an Exception.
 		def send_changes &block
 			msg = {}
 
@@ -257,11 +261,7 @@ module NLHue
 			end
 			@changes.clear
 
-			put_light msg do |response|
-				# TODO: Update internal state using success response?
-				puts "Changes response: #{response}" # XXX
-				yield response if block_given?
-			end
+			put_light msg, &block
 		end
 
 		# PUTs the given Hash or Array, converted to JSON, to this
@@ -272,7 +272,10 @@ module NLHue
 				raise "Message to PUT must be a Hash or an Array, not #{msg.class.inspect}."
 			end
 
-			@bridge.put_api "/lights/#{@id}/state", msg.to_json, &block
+			@bridge.put_api "/lights/#{@id}/state", msg.to_json do |response|
+				status, result = @bridge.check_json response
+				yield status, result if block_given?
+			end
 		end
 	end
 end
