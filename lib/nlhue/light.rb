@@ -72,12 +72,27 @@ module NLHue
 			@defer = true
 		end
 
+		# Sets the transition time in centiseconds used for the next
+		# call to send.  The transition time will be reset when send is
+		# called.  The transition time will not be set if defer has not
+		# been called.  Call with nil to clear the transition time.
+		def transitiontime= time
+			if @defer
+				time = 0 if time < 0
+				@transitiontime = time.to_i
+			end
+		end
+
 		# Sends all changes queued since the last call to defer.  The
 		# block, if given, will be called with true and the response on
-		# success, or false and an Exception on error.
+		# success, or false and an Exception on error.  The transition
+		# time sent to the bridge can be controlled with
+		# transitiontime=.  If no transition time is set, the default
+		# transition time will be used by the bridge.
 		def send &block
 			send_changes &block
 			@defer = false
+			@transitiontime = nil
 		end
 
 		# Sets the light to flash once if repeat is false, or several
@@ -294,6 +309,8 @@ module NLHue
 				end
 			end
 			@changes.clear
+
+			msg['transitiontime'] = @transitiontime if @transitiontime
 
 			put_light msg, &block
 		end
