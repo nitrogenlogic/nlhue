@@ -41,6 +41,7 @@ module NLHue
 			@config = nil
 			@registered = false
 			@lights = {}
+			@groups = []
 			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
 				@serial = serial.downcase
 			else
@@ -157,7 +158,33 @@ module NLHue
 
 						@registered = true
 
-						# TODO: Groups, schedules
+						get_api '/groups/0' do |response|
+							status, result = check_json response
+							if status
+								if @groups[0].is_a? Group
+									@groups[0].handle_json result
+								else
+									@groups[0] = Group.new(self, 0, result)
+								end
+							end
+						end
+
+						@config['groups'].each do |id, info|
+							# With no idea what the group configuration
+							# will look like at this point, I'm guessing
+							# that it is similar to the lights.
+							# TODO: Test with actual groups
+							if @groups[id.to_i].is_a? Group
+								@groups[id.to_i].handle_json info
+							else
+								@groups[id.to_i] = Group.new(self, id.to_i, info)
+							end
+						end
+						@groups.select do |id, light|
+							@config['groups'].include? id.to_s
+						end
+
+						# TODO: schedules
 					end
 				rescue => e
 					status = false
@@ -188,6 +215,19 @@ module NLHue
 		# The number of lights known to this bridge.
 		def num_lights
 			@lights.length
+		end
+
+		# Returns an array of Group objects representing the groups
+		# known to this bridge, including the default group that
+		# contains all lights known to this bridge.
+		def groups
+			@groups.clone
+		end
+
+		# The number of groups known to this bridge, including the
+		# default group that contains all lights known to the bridge.
+		def num_groups
+			@groups.length
 		end
 
 		# Sets the username used to interact with the bridge.
