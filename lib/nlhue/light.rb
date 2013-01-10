@@ -20,6 +20,7 @@ module NLHue
 			@bridge = bridge
 			@id = id
 			@changes = Set.new
+			@defer = false
 			handle_json info
 		end
 
