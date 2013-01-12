@@ -142,10 +142,11 @@ module NLHue
 					if status
 						@config = result
 						@config['lights'].each do |id, info|
-							if @lights[id.to_i].is_a? Light
-								@lights[id.to_i].handle_json info
+							id = id.to_i
+							if @lights[id].is_a? Light
+								@lights[id].handle_json info
 							else
-								@lights[id.to_i] = Light.new(self, id, info)
+								@lights[id] = Light.new(self, id, info)
 							end
 						end
 						@lights.select do |id, light|

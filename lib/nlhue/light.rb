@@ -18,7 +18,7 @@ module NLHue
 		# info - Parsed Hash of the JSON light info object from the bridge.
 		def initialize bridge, id, info
 			@bridge = bridge
-			@id = id
+			@id = id.to_i
 			@changes = Set.new
 			@defer = false
 			handle_json info
