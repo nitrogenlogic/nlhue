@@ -238,10 +238,7 @@ module NLHue
 		# wrapped to 0-360).  The light must already be switched on for
 		# this to work.
 		def hue= hue
-			puts "Hue #{hue}"# XXX
 			hue = (hue * 65536 / 360).to_i & 65535
-			puts "Hue2 #{hue}" # XXX
-
 			set({ 'hue' => hue, 'colormode' => 'hs' })
 		end
 
