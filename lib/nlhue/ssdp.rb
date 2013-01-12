@@ -79,6 +79,9 @@ module NLHue
 
 			def post_init
 				send_datagram @msg, SSDP_ADDR, SSDP_PORT
+				EM.add_timer(0.5) do
+					send_datagram @msg, SSDP_ADDR, SSDP_PORT
+				end
 			end
 
 			def receive_data data
