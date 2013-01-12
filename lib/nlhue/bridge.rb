@@ -47,6 +47,9 @@ module NLHue
 			else
 				@serial = nil
 			end
+
+			@update_timer = nil
+			@update_callbacks = []
 		end
 
 		# Calls the given block with true or false if verification by
@@ -129,6 +132,50 @@ module NLHue
 
 				yield status, result
 			end
+		end
+
+		# Starts a timer that retrieves the current state of the bridge
+		# every interval seconds.  Does nothing if this Bridge is
+		# already subscribed.
+		def subscribe interval=1
+			return if @update_timer
+
+			update_proc = proc {
+				update do |status, result|
+					@update_callbacks.each do |cb|
+						begin
+							cb.call status, result
+						rescue => e
+							puts "Error calling an update callback: #{e}", e.backtrace
+						end
+					end
+					@update_timer = EM::Timer.new(interval, update_proc) if @update_timer
+				end
+			}
+
+			@update_timer = EM::Timer.new(interval, update_proc)
+		end
+
+		# Stops the timer started by subscribe(), if one is running.
+		def unsubscribe
+			@update_timer.cancel if @update_timer
+			@update_timer = nil
+		end
+
+		# Adds a callback to be notified when a subscription update is
+		# received, or when a subscription update fails.  The callback
+		# will be called with true and the update JSON when an update
+		# succeeds, false and the update JSON when an update fails.
+		# The return value may be passed to remove_update_callback.
+		def add_update_callback &cb
+			@update_callbacks << cb
+			cb
+		end
+
+		# Removes the given callback (returned by add_update_callback)
+		# from the list of callbacks notified with subscription events.
+		def remove_update_callback cb
+			@update_callbacks.delete cb
 		end
 
 		# Updates the Bridge object with the lights, groups, and config
