@@ -41,7 +41,7 @@ module NLHue
 			@config = nil
 			@registered = false
 			@lights = {}
-			@groups = []
+			@groups = {}
 			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
 				@serial = serial.downcase
 			else
@@ -254,10 +254,10 @@ module NLHue
 			@registered
 		end
 
-		# Returns an array of Light objects representing the lights
-		# known to the Hue bridge.
+		# Returns a Hash mapping light IDs to Light objects,
+		# representing the lights known to the Hue bridge.
 		def lights
-			@lights.values
+			@lights.clone
 		end
 
 		# The number of lights known to this bridge.
@@ -265,9 +265,9 @@ module NLHue
 			@lights.length
 		end
 
-		# Returns an array of Group objects representing the groups
-		# known to this bridge, including the default group that
-		# contains all lights known to this bridge.
+		# Returns a Hash mapping group IDs to Group objects
+		# representing the groups known to this bridge, including the
+		# default group 0 that contains all lights from this bridge.
 		def groups
 			@groups.clone
 		end

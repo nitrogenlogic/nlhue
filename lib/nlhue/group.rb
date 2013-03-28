@@ -46,7 +46,7 @@ module NLHue
 		# Returns an array containing this group's corresponding Light
 		# objects from the Bridge.
 		def lights
-			lights = @bridge.lights
+			lights = @bridge.lights.values
 			lights.select { |light| @lights.include? light.id }
 		end
 

@@ -13,7 +13,7 @@ EM.run do
 			puts "Update: #{response}: #{status}, #{result}"
 			puts result.backtrace if result.is_a? Exception
 
-			response.lights.each do |light|
+			response.lights.each_value do |light|
 				puts "A light: #{light}"
 				light.update do |status, result|
 					puts "Light #{light} update: #{status}, #{result}"
