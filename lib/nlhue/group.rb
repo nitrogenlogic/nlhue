@@ -256,6 +256,17 @@ module NLHue
 			@info['action']['sat'].to_i
 		end
 
+		# Sets the group's effect mode (either 'none' or 'colorloop').
+		def effect= effect
+			effect = 'none' unless effect == 'colorloop'
+			set({ 'effect' => effect})
+		end
+
+		# The effect mode most recently set with effect=.
+		def effect
+			@info['state']['effect']
+		end
+
 		# Returns the group's last set color mode ('ct' for color
 		# temperature, 'hs' for hue/saturation, 'xy' for CIE XYZ).
 		def colormode
@@ -293,7 +304,7 @@ module NLHue
 						msg['ct'] = @info['action']['ct']
 					end
 
-				when 'bri', 'on', 'alert'
+				when 'bri', 'on', 'alert', 'effect'
 					msg[param] = @info['action'][param]
 				end
 			end

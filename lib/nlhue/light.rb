@@ -265,6 +265,17 @@ module NLHue
 			@info['state']['sat'].to_i
 		end
 
+		# Sets the light's effect mode (either 'none' or 'colorloop').
+		def effect= effect
+			effect = 'none' unless effect == 'colorloop'
+			set({ 'effect' => effect })
+		end
+
+		# The light's current effect mode.
+		def effect
+			@info['state']['effect']
+		end
+
 		# Returns the light's current color mode ('ct' for color
 		# temperature, 'hs' for hue/saturation, 'xy' for CIE XYZ).
 		def colormode
@@ -302,7 +313,7 @@ module NLHue
 						msg['ct'] = @info['state']['ct']
 					end
 
-				when 'bri', 'on', 'alert'
+				when 'bri', 'on', 'alert', 'effect'
 					msg[param] = @info['state'][param]
 				end
 			end
