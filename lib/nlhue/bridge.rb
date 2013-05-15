@@ -412,9 +412,7 @@ module NLHue
 
 			@request_queue ||= []
 
-			puts "========= QUEUING A REQUEST (SIZE BEFORE: #{@request_queue.size}) =========" # XXX
 			req = [verb, path, data, content_type, timeout, block]
-			puts req.inspect # XXX
 			@request_queue << req
 			do_next_request if @request_queue.size == 1
 		end
@@ -463,11 +461,8 @@ module NLHue
 		# Shifts a request off the request queue (if it is not empty),
 		# then passes it to #do_request.  See #request.
 		def do_next_request
-			puts "========= CHECKING FOR NEXT REQUEST (SIZE #{@request_queue.size}) ========="
 			unless @request_queue.empty?
-				puts "=========  DOING NEXT REQUEST =========" # XXX
 				req = @request_queue.first
-				puts req.inspect # XXX
 				block = req.pop
 				do_request *req, &block
 			end
