@@ -402,6 +402,8 @@ module NLHue
 		# will be called with a hash containing :content, :headers, and
 		# :status if a response was received, or just false on error.
 		def request verb, path, data=nil, content_type='application/json;charset=utf-8', timeout=5, &block
+			# TODO: Queue requests and satisfy one at a time.
+			# TODO: Coalesce queued requests across lights and groups.
 			raise 'A block must be given.' unless block_given?
 			req = EM::P::HttpClient.request(
 				verb: verb,
