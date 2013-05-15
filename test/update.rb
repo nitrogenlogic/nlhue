@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby1.9.1
-# Attempts to get information from each bridge and light.
+# Attempts to get information from each bridge and light, then sets each light
+# to a random color.
 # (C)2013 Mike Bourgeous
 
 require_relative '../lib/nlhue'
