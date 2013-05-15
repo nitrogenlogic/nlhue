@@ -1,5 +1,5 @@
 # A class representing a light known to a Hue bridge.
-# (C)2012 Mike Bourgeous
+# (C)2013 Mike Bourgeous
 
 require 'eventmachine'
 require 'em/protocols/httpclient'

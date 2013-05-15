@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby1.9.1
 # Attempts to get information from each bridge and light.
-# (C)2012 Mike Bourgeous
+# (C)2013 Mike Bourgeous
 
 require_relative '../lib/nlhue'
 
