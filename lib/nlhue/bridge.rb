@@ -26,7 +26,10 @@ module NLHue
 	end
 
 	# A class representing a Hue bridge.  A Bridge object may not refer to
-	# an actual Hue bridge if verify() hasn't succeeded.
+	# an actual Hue bridge if verify() hasn't succeeded.  Manages a list of
+	# lights and groups on the bridge.  HTTP requests to the bridge are
+	# queued and sent one at a time to prevent overloading the bridge's
+	# CPU.
 	class Bridge
 		attr_reader :username, :addr, :serial, :name
 
@@ -396,15 +399,36 @@ module NLHue
 			request 'DELETE', path, nil, nil, timeout, &block
 		end
 
-		# Makes a request of the given type to the given path, using
+		# Queues a request of the given type to the given path, using
 		# the given data and content type for e.g. PUT and POST.  The
 		# request will time out after timeout seconds.  The given block
 		# will be called with a hash containing :content, :headers, and
 		# :status if a response was received, or just false on error.
+		# This should be called from the EventMachine reactor thread.
 		def request verb, path, data=nil, content_type='application/json;charset=utf-8', timeout=5, &block
-			# TODO: Queue requests and satisfy one at a time.
 			# TODO: Coalesce queued requests across lights and groups.
 			raise 'A block must be given.' unless block_given?
+			raise 'Call from the EventMachine reactor thread.' unless EM.reactor_thread?
+
+			@request_queue ||= []
+
+			puts "========= QUEUING A REQUEST (SIZE BEFORE: #{@request_queue.size}) =========" # XXX
+			req = [verb, path, data, content_type, timeout, block]
+			puts req.inspect # XXX
+			@request_queue << req
+			do_next_request if @request_queue.size == 1
+		end
+
+		private
+		# Sets this bridge's name (call after getting UPnP XML or
+		# bridge config JSON), removing the IP address if present.
+		def set_name name
+			@name = name.gsub " (#{@addr})", ''
+		end
+
+		# Sends a request with the given method/path/etc.  Called by
+		# #do_next_request.  See #request.
+		def do_request verb, path, data=nil, content_type, timeout, &block
 			req = EM::P::HttpClient.request(
 				verb: verb,
 				host: @addr,
@@ -413,20 +437,40 @@ module NLHue
 				contenttype: content_type,
 			)
 			req.callback {|response|
-				yield response
+				begin
+					yield response
+				rescue => e
+					puts "Error calling a Hue bridge's request callback.", e, e.backtrace
+				end
+
+				@request_queue.shift
+				do_next_request
 			}
 			req.errback {
 				req.close_connection # For timeout
-				yield false
+				begin
+					yield false
+				rescue => e
+					puts "Error calling a Hue bridge's request callback.", e, e.backtrace
+				end
+
+				@request_queue.shift
+				do_next_request
 			}
 			req.timeout 5
 		end
 
-		private
-		# Sets this bridge's name (call after getting UPnP XML or
-		# bridge config JSON), removing the IP address if present.
-		def set_name name
-			@name = name.gsub " (#{@addr})", ''
+		# Shifts a request off the request queue (if it is not empty),
+		# then passes it to #do_request.  See #request.
+		def do_next_request
+			puts "========= CHECKING FOR NEXT REQUEST (SIZE #{@request_queue.size}) ========="
+			unless @request_queue.empty?
+				puts "=========  DOING NEXT REQUEST =========" # XXX
+				req = @request_queue.first
+				puts req.inspect # XXX
+				block = req.pop
+				do_request *req, &block
+			end
 		end
 	end
 end
