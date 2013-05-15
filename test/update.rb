@@ -20,7 +20,11 @@ EM.run do
 					puts result.backtrace if result.is_a? Exception
 
 					light.on!
+					light.defer
+					light.bri = 255
 					light.hue = rand 360
+					light.sat = rand(75) + 180
+					light.send
 				end
 			end
 		end
