@@ -194,10 +194,7 @@ module NLHue
 						@config['lights'].each do |id, info|
 							id = id.to_i
 							if @lights[id].is_a? Light
-								puts "Handling JSON update for light #{id}: hue: #{info['state']['hue']}" # XXX
-								puts "  ### Hue before update: #{@lights[id].hue}" # XXX
 								@lights[id].handle_json info
-								puts "  ### Hue after update:  #{@lights[id].hue}" # XXX
 							else
 								@lights[id] = Light.new(self, id, info)
 							end

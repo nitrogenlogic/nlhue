@@ -30,7 +30,6 @@ module NLHue
 		def handle_json info
 			raise "Light info must be a Hash, not #{info.class}." unless info.is_a?(Hash)
 			@changes.each do |key|
-				puts "Preserving #{key} (#{@info['state'][key]} not #{info['state'][key]}) on light #{id}." # XXX
 				info['state'][key] = @info['state'][key]
 			end
 			@info = info
