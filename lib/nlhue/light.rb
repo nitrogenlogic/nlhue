@@ -29,6 +29,10 @@ module NLHue
 		# /api/XXX/lights/ID).
 		def handle_json info
 			raise "Light info must be a Hash, not #{info.class}." unless info.is_a?(Hash)
+			@changes.each do |key|
+				puts "Preserving #{key} (#{@info['state'][key]} not #{info['state'][key]}) on light #{id}." # XXX
+				info['state'][key] = @info['state'][key]
+			end
 			@info = info
 			@type = info['type']
 			@name = info['name']
@@ -317,11 +321,13 @@ module NLHue
 					msg[param] = @info['state'][param]
 				end
 			end
-			@changes.clear
 
 			msg['transitiontime'] = @transitiontime if @transitiontime
 
-			put_light msg, &block
+			put_light msg do |status, result|
+				@changes.clear if status
+				yield status, result if block_given?
+			end
 		end
 
 		# PUTs the given Hash or Array, converted to JSON, to this
