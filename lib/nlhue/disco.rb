@@ -35,11 +35,15 @@ module NLHue
 		@@bridges_changed = false
 		@@disco_running = false
 
-		# Starts a timer that periodically discovers Hue bridges.
+		# Starts a timer that periodically discovers Hue bridges.  If
+		# the username is specified, the Bridge objects' username will
+		# be set before trying to update.
 		# Using very short intervals may overload Hue bridges, causing
-		# light updates to be delayed or erratic.
-		def self.start_discovery interval=15
+		# light and group commands to be delayed or erratic.
+		def self.start_discovery username=nil, interval=15
 			raise 'Discovery is already running' if @@disco_timer || @@disco_running
+			raise 'Username must be a String' unless username.is_a? String
+			raise 'Interval must be a number' unless interval.is_a? Numeric
 			raise 'Interval must be >= 1' unless interval >= 1
 
 			@@disco_interval = interval
@@ -54,6 +58,7 @@ module NLHue
 				reset_disco_timer bridges, 5
 				send_discovery do |br|
 					if br.is_a? NLHue::Bridge
+						br.username = username if username
 						br.update do |status, result|
 							bridges << br
 							reset_disco_timer bridges

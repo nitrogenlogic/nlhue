@@ -8,7 +8,7 @@ EM.run do
 	cb = NLHue::Disco.add_disco_callback do |event, param|
 		puts "Disco event: #{event}, #{param}"
 	end
-	NLHue::Disco.start_discovery(1)
+	NLHue::Disco.start_discovery('testing1234', 1)
 
 	EM.add_timer(10) do
 		puts "Stopping discovery"
@@ -18,7 +18,7 @@ EM.run do
 	EM.add_timer(12) do
 		puts "Starting discovery"
 		NLHue::Disco.add_disco_callback cb
-		NLHue::Disco.start_discovery(1)
+		NLHue::Disco.start_discovery('testing1234', 1)
 	end
 
 	EM.add_timer(25) do
