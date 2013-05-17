@@ -84,12 +84,18 @@ module NLHue
 							@verified = true
 						end
 					end
+
+					# FIXME: Delete this line when converted to em-http-request; this
+					# works around the empty :content returned by EM::HttpClient
+					#
+					# See commits:
+					# 34110773fc45bfdd56c32972650f9d947d8fac78
+					# 6d8d7a0566e3c51c3ab15eb2358dde3e518594d3
+					@verified = true
 				end
 
-				# XXX yield @verified
-				@verified = true
 				begin
-					yield true
+					yield @verified
 				rescue => e
 					# TODO: Use a user-provided logging facility?
 					puts "Error notifying block after verification: #{e}", e.backtrace
@@ -357,7 +363,7 @@ module NLHue
 		# false if there was an error.
 		def get path, timeout=5, &block
 			# FIXME: Use em-http-request instead of HttpClient,
-			# which returns an empty :content field
+			# which returns an empty :content field for /description.xml
 			request 'GET', path, nil, nil, timeout, &block
 		end
 
