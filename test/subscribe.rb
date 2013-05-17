@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby1.9.1
 # Tests periodic bridge updates.
-# (C)2012 Mike Bourgeous
+# (C)2013 Mike Bourgeous
 
 require_relative '../lib/nlhue'
 
 USER = ENV['HUE_USER'] || 'testing1234'
 
 EM.run do
-	NLHue.discover(3) do |br|
+	NLHue::Disco.send_discovery(3) do |br|
 		br.username = USER
 
 		count = 0

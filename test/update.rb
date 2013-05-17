@@ -8,7 +8,7 @@ require_relative '../lib/nlhue'
 USER = ENV['HUE_USER'] || 'testing1234'
 
 EM.run do
-	NLHue.discover(3) do |response|
+	NLHue::Disco.send_discovery(3) do |response|
 		response.username = USER
 		response.update do |status, result|
 			puts "Update: #{response}: #{status}, #{result}"
