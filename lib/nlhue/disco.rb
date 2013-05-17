@@ -55,13 +55,12 @@ module NLHue
 				notify_callbacks :start
 
 				bridges = []
-				reset_disco_timer bridges, 5
+				reset_disco_timer bridges, nil, 5
 				send_discovery do |br|
 					if br.is_a? NLHue::Bridge
 						br.username = username if username
 						br.update do |status, result|
-							bridges << br
-							reset_disco_timer bridges
+							reset_disco_timer bridges, br
 						end
 					end
 				end
@@ -74,15 +73,25 @@ module NLHue
 		# callbacks, and clears the list of bridges.
 		def self.stop_discovery
 			@@disco_timer.cancel if @@disco_timer
-			@@disco_timer = nil
-			@@disco_proc = nil
-			@@disco_running = false
-			@@disco_callbacks.clear
+			@@disco_done_timer.cancel if @@disco_done_timer
 
-			@@bridges.each do |br|
-				br.unsubscribe
+			@@bridges.each do |serial, info|
+				puts "Removing bridge #{serial} when stopping discovery" # XXX
+				notify_callbacks :del, info[:bridge]
+				info[:bridge].unsubscribe
 			end
-			@@bridges.clear
+			if @@disco_done_timer
+				notify_callbacks :end, !@@bridges.empty?
+			end
+
+			EM.next_tick do
+				@@bridges.clear
+				@@disco_timer = nil
+				@@disco_done_timer = nil
+				@@disco_proc = nil
+				@@disco_running = false
+				@@disco_callbacks.clear
+			end
 		end
 
 		# Adds the given block to be called with discovery events.  The return
@@ -177,16 +186,27 @@ module NLHue
 		def self.notify_callbacks *args
 			bench "Notify Hue disco callbacks: #{args[0].inspect}" do
 				@@disco_callbacks.each do |cb|
-					cb.call *args
+					begin
+						cb.call *args
+					rescue => e
+						log_e e, "Error notifying Hue disco callback #{cb.inspect} about #{args[0]} event."
+					end
 				end
 			end
 		end
 
-		# After timeout seconds, updates the internal list of bridges.
-		# Cancels any previous timeout.  This is called each time a new
-		# bridge is discovered so that discovery ends when no new
-		# bridges come in for timeout seconds.
-		def self.reset_disco_timer bridges, timeout=2
+		# Adds the given new bridge to the given array of bridges from
+		# this round of discovery.  After timeout seconds, updates the
+		# internal list of bridges.  Cancels any previous timeout.
+		# This is called each time a new bridge is discovered so that
+		# discovery ends when no new bridges come in for timeout
+		# seconds.
+		def self.reset_disco_timer bridges, new_bridge, timeout=2
+			if new_bridge.is_a?(NLHue::Bridge)
+				bridges << new_bridge
+				notify_bridge_added new_bridge
+			end
+
 			@@disco_done_timer.cancel if @@disco_done_timer
 			@@disco_done_timer = EM::Timer.new(timeout) do
 				update_bridges bridges
@@ -237,8 +257,6 @@ module NLHue
 								end
 							end
 						end
-
-						notify_bridge_added br # TODO: Find a way to do this in reset_disco_timer
 					end
 				end
 
@@ -246,8 +264,9 @@ module NLHue
 					age_limit = br[:bridge].subscribed? ? MAX_SUBSCRIBED_AGE : MAX_BRIDGE_AGE
 
 					if br[:age] > age_limit
+						log "Bridge #{br[:bridge].serial} missing from #{age_limit} rounds of discovery."
 						@@bridges_changed = true
-						br.unsubscribe
+						br[:bridge].unsubscribe
 						notify_bridge_removed br[:bridge]
 
 						false
