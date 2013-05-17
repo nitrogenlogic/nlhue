@@ -105,11 +105,12 @@ module NLHue
 
 		# Attempts to register the given username with the Bridge.  The
 		# block will be called with true and the result if registration
-		# succeeds, false and an exception if not.  If the username is
-		# the current username assigned to this Bridge object, and it
-		# already appears to be registered, it will not be
-		# re-registered, and the block will be called with true and a
-		# message.
+		# succeeds, false and an exception if not.  If registration
+		# succeeds, the Bridge's current username will be set to the
+		# given username.  If the username is the current username
+		# assigned to this Bridge object, and it already appears to be
+		# registered, it will not be re-registered, and the block will
+		# be called with true and a message.
 		def register username, devicetype, &block
 			raise NotVerifiedError.new unless @verified
 			check_username username
@@ -123,7 +124,10 @@ module NLHue
 			post '/api', msg do |response|
 				status, result = check_json response
 
-				@username = username if status
+				if status
+					@username = username
+					@registered = true
+				end
 
 				yield status, result
 			end
@@ -252,13 +256,29 @@ module NLHue
 			end
 		end
 
+		# Returns whether the Bridge object has had at least one
+		# successful update from #update.
 		def updated?
 			@config.is_a? Hash
 		end
 
+		# Indicates whether verification succeeded.  A Hue bridge has
+		# been verified to exist at the address given to the
+		# constructor or to #addr= if this returns true.  Use #verify
+		# to perform verification if this returns false.
+		def verified?
+			@verified
+		end
+
+		# Returns true if this bridge is subscribed (i.e. periodically
+		# polling the Hue bridge for updates).
+		def subscribed?
+			!!@update_timer
+		end
+
 		# Returns whether the Bridge object believes it is registered
-		# with its associated Hue bridge.  Set to true when update
-		# succeeds, set to false if a NotRegisteredError occurs.
+		# with its associated Hue bridge.  Set to true when #update
+		# or #register succeeds, false if a NotRegisteredError occurs.
 		def registered?
 			@registered
 		end
@@ -291,6 +311,14 @@ module NLHue
 		def username= username
 			check_username username
 			@username = username
+		end
+
+		# Sets the IP address or hostname of the Hue bridge.  The
+		# Bridge object will be marked as unverified, so #verify should
+		# be called afterward.
+		def addr= addr
+			@addr = addr
+			@verified = false
 		end
 
 		# Throws errors if the given username is invalid (may not catch
