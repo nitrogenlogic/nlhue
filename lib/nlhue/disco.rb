@@ -171,7 +171,7 @@ module NLHue
 									begin
 										yield dev
 									rescue => e
-										puts "Error notifying block with discovered bridge: #{e}", e.backtrace
+										log_e e, "Error notifying block with discovered bridge #{serial}"
 									end
 								end
 							end

@@ -97,8 +97,7 @@ module NLHue
 				begin
 					yield @verified
 				rescue => e
-					# TODO: Use a user-provided logging facility?
-					puts "Error notifying block after verification: #{e}", e.backtrace
+					log_e e, "Error notifying block after verification"
 				end
 			end
 		end
@@ -159,7 +158,7 @@ module NLHue
 						begin
 							cb.call status, result
 						rescue => e
-							puts "Error calling an update callback: #{e}", e.backtrace
+							log_e e, "Error calling an update callback"
 						end
 					end
 					@update_timer = EM::Timer.new(interval, update_proc) if @update_timer
@@ -472,7 +471,7 @@ module NLHue
 				begin
 					yield response
 				rescue => e
-					puts "Error calling a Hue bridge's request callback.", e, e.backtrace
+					log_e e, "Error calling a Hue bridge's request callback."
 				end
 
 				@request_queue.shift
@@ -483,7 +482,7 @@ module NLHue
 				begin
 					yield false
 				rescue => e
-					puts "Error calling a Hue bridge's request callback.", e, e.backtrace
+					log_e e, "Error calling a Hue bridge's request callback with error."
 				end
 
 				@request_queue.shift
