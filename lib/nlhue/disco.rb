@@ -143,6 +143,21 @@ module NLHue
 			@@bridges[serial] && @@bridges[serial][:bridge]
 		end
 
+		# Gets the number of consecutive times a bridge has been
+		# missing from discovery.
+		def self.get_missing_count serial
+			serial = serial.downcase
+			@@bridges[serial] && @@bridges[serial][:age]
+		end
+
+		# Gets the number of consecutive times a bridge has failed to
+		# update.  This value is only updated if the Bridge object's
+		# subscribe or update methods are called.
+		def self.get_error_count serial
+			serial = serial.downcase
+			@@bridges[serial] && @@bridges[serial][:errcount]
+		end
+
 		# Sends an SSDP discovery request, then yields an NLHue::Bridge
 		# object for each Hue hub found on the network.  Responses may
 		# come for more than timeout seconds after this function is
