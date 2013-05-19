@@ -268,6 +268,9 @@ module NLHue
 										br.remove_update_callback info[:cb]
 										br.unsubscribe
 										notify_bridge_removed br
+										EM.next_tick do
+											do_disco
+										end
 									end
 								end
 							end
