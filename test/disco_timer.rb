@@ -23,6 +23,9 @@ EM.run do
 
 	EM.add_timer(25) do
 		puts "Exiting"
-		EM.stop_event_loop
+		NLHue::Disco.stop_discovery
+		EM.add_timer(1) do
+			EM.stop_event_loop
+		end
 	end
 end
