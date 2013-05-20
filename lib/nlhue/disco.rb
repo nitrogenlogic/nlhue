@@ -77,7 +77,7 @@ module NLHue
 			@@bridges.each do |serial, info|
 				puts "Removing bridge #{serial} when stopping discovery" # XXX
 				notify_callbacks :del, info[:bridge]
-				info[:bridge].unsubscribe
+				info[:bridge].clean
 			end
 			if @@disco_done_timer
 				notify_callbacks :end, !@@bridges.empty?
@@ -243,9 +243,9 @@ module NLHue
 									info = @@bridges[br.serial]
 									@@bridges.delete br.serial
 									br.remove_update_callback info[:cb]
-									br.unsubscribe
 									notify_bridge_removed br
 									EM.next_tick do
+										br.clean # next tick to ensure after notify*removed
 										do_disco
 									end
 								end
@@ -289,8 +289,10 @@ module NLHue
 					if br[:age] > age_limit
 						log "Bridge #{br[:bridge].serial} missing from #{age_limit} rounds of discovery."
 						@@bridges_changed = true
-						br[:bridge].unsubscribe
 						notify_bridge_removed br[:bridge]
+						EM.next_tick do
+							br[:bridge].clean # next tick to ensure after notify*removed
+						end
 
 						false
 					else

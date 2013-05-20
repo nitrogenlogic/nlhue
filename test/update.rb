@@ -8,6 +8,9 @@ require_relative '../lib/nlhue'
 USER = ENV['HUE_USER'] || 'testing1234'
 
 EM.run do
+	NLHue::Bridge.add_bridge_callback do |bridge, status|
+		puts "Bridge event: #{bridge.serial} is now #{status ? 'available' : 'unavailable'}"
+	end
 	NLHue::Disco.send_discovery(3) do |response|
 		response.username = USER
 		response.update do |status, result|

@@ -33,6 +33,35 @@ module NLHue
 	class Bridge
 		attr_reader :username, :addr, :serial, :name
 
+		@@bridge_cbs = [] # callbacks notified when a bridge has its first successful update
+
+		# Adds a callback to be called with a Bridge object and a
+		# status each time a Bridge has its first successful update or
+		# becomes unregistered.  Bridge callbacks will be called after
+		# any corresponding :add or :del disco event is delivered.
+		# Returns a Proc object that may be passed to remove_update_cb.
+		def self.add_bridge_callback &block
+			@@bridge_cbs << block
+			block
+		end
+
+		# Removes the given callback (returned by add_update_callback)
+		# from Bridge first update/unregistration notifications.
+		def self.remove_bridge_callback cb
+			@@bridge_cbs.delete cb
+		end
+
+		# Sends the given bridge to all attached first update callbacks.
+		def self.notify_bridge_callbacks br, status
+			@@bridge_cbs.each do |cb|
+				begin
+					cb.call br, status
+				rescue => e
+					log_e e, "Error calling a first update callback"
+				end
+			end
+		end
+
 		# addr - The IP address or hostname of the Hue bridge.
 		# serial - The serial number of the bridge, if available
 		# 	   (parsed from the USN header in a UPnP response)
@@ -140,7 +169,10 @@ module NLHue
 			delete "/api/#{username}/config/whitelist/#{username}" do |response|
 				status, result = check_json response
 
-				@registered = false if @username == username && status
+				if @username == username && status
+					@registered = false
+					Bridge.notify_bridge_callbacks self, false
+				end
 
 				yield status, result
 			end
@@ -154,13 +186,6 @@ module NLHue
 
 			update_proc = proc {
 				update do |status, result|
-					@update_callbacks.each do |cb|
-						begin
-							cb.call status, result
-						rescue => e
-							log_e e, "Error calling an update callback"
-						end
-					end
 					@update_timer = EM::Timer.new(interval, update_proc) if @update_timer
 				end
 			}
@@ -199,6 +224,8 @@ module NLHue
 
 				begin
 					if status
+						first_update = !@registered
+
 						@config = result
 						@config['lights'].each do |id, info|
 							id = id.to_i
@@ -245,11 +272,15 @@ module NLHue
 						end
 
 						# TODO: schedules
+
+						Bridge.notify_bridge_callbacks self, true if first_update
 					end
 				rescue => e
 					status = false
 					result = e
 				end
+						
+				notify_update_callbacks status, result
 
 				yield status, result
 			end
@@ -320,6 +351,26 @@ module NLHue
 			@verified = false
 		end
 
+		# Unsubscribes from bridge updates, marks this bridge as
+		# unregistered, notifies global bridge callbacks added with
+		# add_bridge_callback, then removes references to
+		# configuration, lights, groups, and update callbacks.
+		def clean
+			was_updated = updated?
+			unsubscribe
+			@registered = false
+
+			Bridge.notify_bridge_callbacks self, false if was_updated
+
+			@verified = false
+			@config = nil
+			@lights.clear
+			@lights = nil
+			@groups.clear
+			@groups = nil
+			@update_callbacks.clear
+		end
+
 		# Throws errors if the given username is invalid (may not catch
 		# all invalid names).
 		def check_username username
@@ -358,7 +409,10 @@ module NLHue
 						if result_msgs.include?('link button not pressed')
 							raise LinkButtonError.new
 						elsif result_msgs.include?('unauthorized user')
+							was_reg = @registered
 							@registered = false
+							Bridge.notify_bridge_callbacks self, false if was_reg
+
 							raise NotRegisteredError.new
 						else
 							raise StandardError.new(result_msgs.join(', '))
@@ -498,6 +552,18 @@ module NLHue
 				req = @request_queue.first
 				block = req.pop
 				do_request *req, &block
+			end
+		end
+
+		# Calls all callbacks added using #add_update_callback with the
+		# given update status and result.
+		def notify_update_callbacks status, result
+			@update_callbacks.each do |cb|
+				begin
+					cb.call status, result
+				rescue => e
+					log_e e, "Error calling an update callback"
+				end
 			end
 		end
 	end

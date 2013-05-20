@@ -5,12 +5,22 @@
 require_relative '../lib/nlhue'
 
 EM.run do
+	NLHue::Bridge.add_bridge_callback do |bridge, status|
+		puts "Bridge event: #{bridge.serial} is now #{status ? 'available' : 'unavailable'}"
+	end
 	NLHue::Disco.send_discovery(3) do |response|
+		puts "Registering with #{response}"
 		response.register 'testing123', 'Test Device' do |status, result|
 			puts "Register result: #{status}, #{result}"
 
-			response.unregister 'testing123' do |status, result|
-				puts "Unregister result: #{status}, #{result}"
+			puts "\nUpdating #{response}"
+			response.update do |status, result|
+				puts "Update result: #{status}, #{result}"
+				
+				puts "\nUnregistering."
+				response.unregister 'testing123' do |status, result|
+					puts "Unregister result: #{status}, #{result}"
+				end
 			end
 		end
 	end
