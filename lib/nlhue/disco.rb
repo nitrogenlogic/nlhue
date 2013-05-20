@@ -54,13 +54,12 @@ module NLHue
 
 				notify_callbacks :start
 
-				bridges = []
-				reset_disco_timer bridges, nil, 5
+				reset_disco_timer nil, 5
 				send_discovery do |br|
 					if br.is_a? NLHue::Bridge
 						br.username = username if username
 						br.update do |status, result|
-							reset_disco_timer bridges, br
+							reset_disco_timer br
 						end
 					end
 				end
@@ -210,16 +209,47 @@ module NLHue
 			end
 		end
 
-		# Adds the given new bridge to the given array of bridges from
-		# this round of discovery.  After timeout seconds, updates the
-		# internal list of bridges.  Cancels any previous timeout.
-		# This is called each time a new bridge is discovered so that
-		# discovery ends when no new bridges come in for timeout
-		# seconds.
-		def self.reset_disco_timer bridges, new_bridge, timeout=2
-			if new_bridge.is_a?(NLHue::Bridge)
-				bridges << new_bridge
-				notify_bridge_added new_bridge
+		# Adds the given bridge to the list of bridges (or resets the
+		# timeout without adding a bridge if the bridge is nil).  After
+		# timeout seconds, removes aged-out bridges from the internal
+		# list of bridges and notifies disco callbacks that discovery
+		# has ended.  Cancels any previous timeout.  This is called
+		# each time a new bridge is discovered so that discovery ends
+		# when no new bridges come in for timeout seconds.
+		def self.reset_disco_timer br, timeout=2
+			if br.is_a?(NLHue::Bridge)
+				if @@bridges[br.serial]
+					@@bridges[br.serial][:age] = 0
+					@@bridges[br.serial][:errcount] = 0
+				else
+					@@bridges[br.serial] = { :bridge => br, :age => 0, :errcount => 0 }
+					@@bridges_changed = true
+
+					@@bridges[br.serial][:cb] = br.add_update_callback do |status, result|
+						if status
+							@@bridges[br.serial][:errcount] = 0
+						else
+							unless result.is_a? NLHue::NotRegisteredError
+								@@bridges[br.serial][:errcount] += 1
+
+								# Remove here instead of with *_AGE because
+								# *_AGE is only checked once per disco.
+								if @@bridges[br.serial][:errcount] > MAX_BRIDGE_ERR
+									info = @@bridges[br.serial]
+									@@bridges.delete br.serial
+									br.remove_update_callback info[:cb]
+									br.unsubscribe
+									notify_bridge_removed br
+									EM.next_tick do
+										do_disco
+									end
+								end
+							end
+						end
+					end
+
+					notify_bridge_added br
+				end
 			end
 
 			@@disco_done_timer.cancel if @@disco_done_timer
@@ -246,36 +276,6 @@ module NLHue
 				end
 
 				bridges.each do |br|
-					if @@bridges[br.serial]
-						@@bridges[br.serial][:age] = 0
-						@@bridges[br.serial][:errcount] = 0
-					else
-						@@bridges[br.serial] = { :bridge => br, :age => 0, :errcount => 0 }
-						@@bridges_changed = true
-
-						@@bridges[br.serial][:cb] = br.add_update_callback do |status, result|
-							if status
-								@@bridges[br.serial][:errcount] = 0
-							else
-								unless result.is_a? NLHue::NotRegisteredError
-									@@bridges[br.serial][:errcount] += 1
-
-									# Remove here instead of with *_AGE because
-									# *_AGE is only checked once per disco.
-									if @@bridges[br.serial][:errcount] > MAX_BRIDGE_ERR
-										info = @@bridges[br.serial]
-										@@bridges.delete br.serial
-										br.remove_update_callback info[:cb]
-										br.unsubscribe
-										notify_bridge_removed br
-										EM.next_tick do
-											do_disco
-										end
-									end
-								end
-							end
-						end
-					end
 				end
 
 				@@bridges.select! do |k, br|
