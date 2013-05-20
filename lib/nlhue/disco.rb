@@ -93,6 +93,11 @@ module NLHue
 			end
 		end
 
+		# Indicates whether #start_discovery has been called.
+		def self.disco_started?
+			!!(@@disco_timer || @@disco_running)
+		end
+
 		# Adds the given block to be called with discovery events.  The return
 		# value may be passed to remove_disco_callback.
 		#
