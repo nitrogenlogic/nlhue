@@ -155,6 +155,7 @@ module NLHue
 				if status
 					@username = username
 					@registered = true
+					Bridge.notify_bridge_callbacks self, true
 				end
 
 				yield status, result
