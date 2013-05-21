@@ -138,7 +138,9 @@ module NLHue
 		# given username.  If the username is the current username
 		# assigned to this Bridge object, and it already appears to be
 		# registered, it will not be re-registered, and the block will
-		# be called with true and a message.
+		# be called with true and a message.  Call #update after
+		# registration succeeds.  #registered? will not return true
+		# until #update has succeeded.
 		def register username, devicetype, &block
 			raise NotVerifiedError.new unless @verified
 			check_username username
@@ -154,8 +156,6 @@ module NLHue
 
 				if status
 					@username = username
-					@registered = true
-					Bridge.notify_bridge_callbacks self, true
 				end
 
 				yield status, result
