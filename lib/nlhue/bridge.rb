@@ -365,9 +365,7 @@ module NLHue
 			@verified = false
 			@config = nil
 			@lights.clear
-			@lights = nil
 			@groups.clear
-			@groups = nil
 			@update_callbacks.clear
 		end
 

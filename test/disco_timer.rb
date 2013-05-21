@@ -6,38 +6,49 @@ require_relative '../lib/nlhue'
 
 EM.run do
 	disco_cb = NLHue::Disco.add_disco_callback do |event, param|
+		puts if event == :start
 		puts "Disco event: #{event}, #{param}"
+		if event == :start
+			puts "Starting with #{NLHue::Disco.bridges.size} bridge(s)"
+		elsif event == :end
+			puts "Ended, #{param ? 'now' : 'still'} #{NLHue::Disco.bridges.size} bridge(s)"
+		end
 	end
 	bridge_cb = NLHue::Bridge.add_bridge_callback do |bridge, status|
 		puts "Bridge event: #{bridge.serial} is now #{status ? 'available' : 'unavailable'}"
 	end
 
+	puts "--- Starting discovery"
 	NLHue::Disco.start_discovery('testing1234', 1)
 
 	EM.add_timer(10) do
-		puts "Stopping discovery"
+		puts "\n\n--- Stopping discovery"
 		NLHue::Disco.stop_discovery
 		NLHue::Disco.remove_disco_callback disco_cb
 	end
 	EM.add_timer(12) do
-		puts "Starting discovery"
+		puts "\n\n--- Starting discovery"
 		NLHue::Disco.add_disco_callback disco_cb
 		NLHue::Disco.start_discovery('testing1234', 1)
 	end
 
+	EM.add_timer(19) do
+		puts "\n\n--- Forcing discovery"
+		NLHue::Disco.do_disco
+	end
 	EM.add_timer(20) do
-		puts "Stopping discovery"
+		puts "\n\n--- Stopping discovery shortly after starting"
 		NLHue::Disco.stop_discovery
 		NLHue::Disco.remove_disco_callback disco_cb
 	end
 	EM.add_timer(21) do
-		puts "Starting discovery with invalid username"
+		puts "\n\n--- Starting discovery with invalid username"
 		NLHue::Disco.add_disco_callback disco_cb
 		NLHue::Disco.start_discovery('invaliduser', 1)
 	end
 
 	EM.add_timer(30) do
-		puts "Exiting"
+		puts "\n\n--- Exiting"
 		NLHue::Disco.stop_discovery
 		EM.add_timer(1) do
 			EM.stop_event_loop

@@ -15,7 +15,8 @@ module NLHue
 		# Eventually calls the given block with a NLHue::SSDP::Response
 		# for each matching device found on the network within timeout
 		# seconds.  The block will be called with nil after the
-		# timeout.
+		# timeout.  Returns the connection used for discovery; call
+		# #shutdown on the returned object to abort discovery.
 		def self.discover type='ssdp:all', timeout=5, &block
 			raise 'A block must be given to discover().' unless block_given?
 
@@ -28,6 +29,7 @@ module NLHue
 			end
 
 			# TODO: Structure this using EM::Deferrable instead?
+			con
 		end
 
 		# The HTTP response representing a service discovered by SSDP.
@@ -86,7 +88,18 @@ module NLHue
 
 			def receive_data data
 				port, ip = Socket.unpack_sockaddr_in(get_peername)
-				@receiver.call Response.new(ip, data)
+				@receiver.call Response.new(ip, data) if @receiver
+			end
+
+			# Closes the UDP socket and ignores any future SSDP messages.
+			def shutdown
+				@receiver = nil
+				close_connection
+			end
+
+			# Indicates whether shutdown has been called.
+			def closed?
+				@receiver.nil?
 			end
 		end
 	end

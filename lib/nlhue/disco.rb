@@ -1,4 +1,6 @@
 # Discovery of Hue bridges using SSDP.
+# There is *much* opportunity to clean this up.  The mountains of asynchronous
+# handlers make things rather messy.
 # (C)2013 Mike Bourgeous
 
 module NLHue
@@ -34,6 +36,7 @@ module NLHue
 		@@disco_callbacks = []
 		@@bridges_changed = false
 		@@disco_running = false
+		@@disco_connection = nil
 
 		# Starts a timer that periodically discovers Hue bridges.  If
 		# the username is specified, the Bridge objects' username will
@@ -55,11 +58,16 @@ module NLHue
 				notify_callbacks :start
 
 				reset_disco_timer nil, 5
-				send_discovery do |br|
+				@@disco_connection = send_discovery do |br|
 					if br.is_a? NLHue::Bridge
 						br.username = username if username
 						br.update do |status, result|
-							reset_disco_timer br
+							if @@disco_connection && !@@disco_connection.closed?
+								reset_disco_timer br
+							else
+								# Ignore bridges if disco was shut down
+								br.clean
+							end
 						end
 					end
 				end
@@ -68,28 +76,30 @@ module NLHue
 			do_disco
 		end
 
-		# Stops periodic Hue bridge discovery, removes all discovery
-		# callbacks, and clears the list of bridges.
+		# Stops periodic Hue bridge discovery and clears the list of
+		# bridges.  Preserves disco callbacks.
 		def self.stop_discovery
 			@@disco_timer.cancel if @@disco_timer
 			@@disco_done_timer.cancel if @@disco_done_timer
+			@@disco_connection.shutdown if @@disco_connection
 
-			@@bridges.each do |serial, info|
+			bridges = @@bridges.clone
+			bridges.each do |serial, info|
 				puts "Removing bridge #{serial} when stopping discovery" # XXX
+				@@bridges.delete serial
 				notify_callbacks :del, info[:bridge]
 				info[:bridge].clean
 			end
-			if @@disco_done_timer
-				notify_callbacks :end, !@@bridges.empty?
+			if @@disco_running
+				@@disco_running = false
+				notify_callbacks :end, !bridges.empty?
 			end
 
 			EM.next_tick do
-				@@bridges.clear
 				@@disco_timer = nil
 				@@disco_done_timer = nil
 				@@disco_proc = nil
-				@@disco_running = false
-				@@disco_callbacks.clear
+				@@disco_connection = nil
 			end
 		end
 
@@ -121,9 +131,11 @@ module NLHue
 		end
 
 		# Triggers a discovery process immediately (fails if #start_discovery
-		# has not been called).
+		# has not been called), unless discovery is already in progress.
 		def self.do_disco
 			raise 'Call start_discovery() first.' unless @@disco_proc
+			return if @@disco_running
+
 			@@disco_timer.cancel if @@disco_timer
 			@@disco_proc.call if @@disco_proc
 		end
@@ -166,14 +178,14 @@ module NLHue
 		# object for each Hue hub found on the network.  Responses may
 		# come for more than timeout seconds after this function is
 		# called.  Reuses Bridge objects from previously discovered
-		# bridges, if any.
-		def self.send_discovery timeout=3,&block
+		# bridges, if any.  Returns the connection used by SSDP.
+		def self.send_discovery timeout=4, &block
 			# Even though we put 'upnp:rootdevice' in the ST: header, the
 			# Hue hub sends multiple matching and non-matching responses.
 			# We'll use a hash to track which IP addresses we've seen.
 			devs = {}
 
-			NLHue::SSDP.discover 'upnp:rootdevice' do |ssdp|
+			con = NLHue::SSDP.discover 'upnp:rootdevice', timeout do |ssdp|
 				if ssdp && ssdp['Location'].include?('description.xml') && ssdp['USN']
 					serial = ssdp['USN'].gsub(/.*([0-9A-Fa-f]{12}).*/, '\1')
 					unless devs.include?(ssdp.ip) && devs[ssdp.ip].serial == serial
@@ -185,7 +197,7 @@ module NLHue
 
 						unless dev.verified?
 							dev.verify do |result|
-								if result
+								if result && @@disco_connection && !@@disco_connection.closed?
 									devs[ssdp.ip] = dev
 									begin
 										yield dev
@@ -198,6 +210,8 @@ module NLHue
 					end
 				end
 			end
+
+			con
 		end
 
 		private
@@ -261,6 +275,7 @@ module NLHue
 			@@disco_done_timer = EM::Timer.new(timeout) do
 				update_bridges bridges
 				@@disco_done_timer = nil
+				@@disco_connection = nil
 
 				EM.next_tick do
 					@@disco_running = false
