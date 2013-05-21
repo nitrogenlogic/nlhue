@@ -17,7 +17,7 @@ end
 
 # Exception logging method that may be overridden by library users.
 unless methods.include?(:log_e)
-	def log_e e, msg
+	def log_e e, msg=nil
 		e ||= StandardError.new('No exception given to log')
 		if msg
 			puts "#{msg}: #{e}", e.backtrace
