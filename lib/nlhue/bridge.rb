@@ -429,7 +429,9 @@ module NLHue
 
 		# "Hue Bridge: [IP]: [Friendly Name] ([serial]) - N lights"
 		def to_s
-			"Hue Bridge: #{@addr}: #{@name} (#{@serial}) - #{@lights.length} lights"
+			str = "Hue Bridge: #{@addr}: #{@name} (#{@serial}) - #{@lights.length} lights"
+			str << " (#{registered? ? '' : 'un'}registered)"
+			str
 		end
 
 		# JSON object with "addr": [bridge address] and "config":
