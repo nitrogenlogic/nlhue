@@ -2,21 +2,21 @@
 # (C)2013 Mike Bourgeous
 
 # Dummy benchmarking method that may be overridden by library users.
-unless methods.include?(:bench)
+unless private_methods.include?(:bench)
 	def bench label, *args, &block
 		yield
 	end
 end
 
 # Logging method that may be overridden by library users.
-unless methods.include?(:log)
+unless private_methods.include?(:log)
 	def log msg
 		puts msg
 	end
 end
 
 # Exception logging method that may be overridden by library users.
-unless methods.include?(:log_e)
+unless private_methods.include?(:log_e)
 	def log_e e, msg=nil
 		e ||= StandardError.new('No exception given to log')
 		if msg
