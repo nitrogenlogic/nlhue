@@ -197,7 +197,7 @@ module NLHue
 
 						unless dev.verified?
 							dev.verify do |result|
-								if result && @@disco_connection && !@@disco_connection.closed?
+								if result && !con.closed?
 									devs[ssdp.ip] = dev
 									begin
 										yield dev
