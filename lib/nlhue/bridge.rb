@@ -31,7 +31,8 @@ module NLHue
 	# queued and sent one at a time to prevent overloading the bridge's
 	# CPU.
 	class Bridge
-		# Seconds to wait between updates to lights and groups.
+		# Seconds to wait after an update round finishes before sending
+		# more updates to lights and groups.
 		RATE_LIMIT = 0.2
 
 		attr_reader :username, :addr, :serial, :name
@@ -88,6 +89,18 @@ module NLHue
 
 			@rate_timer = nil
 			@rate_targets = {}
+			@rate_proc = proc do
+				if @rate_targets.empty?
+					log "No targets, canceling rate timer." # XXX
+					@rate_timer.cancel if @rate_timer
+					@rate_timer = nil
+				else
+					log "Sending targets from rate timer." # XXX
+					send_targets do
+						@rate_timer = EM::Timer.new(RATE_LIMIT, @rate_proc)
+					end
+				end
+			end
 		end
 
 		# Calls the given block with true or false if verification by
@@ -535,16 +548,7 @@ module NLHue
 				end
 
 				log "Setting rate timer"
-				@rate_timer = EM.add_periodic_timer(RATE_LIMIT) do
-					if @rate_targets.empty?
-						log "No targets, canceling rate timer." # XXX
-						@rate_timer.cancel
-						@rate_timer = nil
-					else
-						log "Sending targets from rate timer." # XXX
-						send_targets
-					end
-				end
+				@rate_timer = EM::Timer.new(RATE_LIMIT, @rate_proc)
 			else
 				log "Rate timer is set -- not sending targets now" # XXX
 			end
@@ -583,8 +587,12 @@ module NLHue
 
 				target, cbs = targets.shift
 				
-				log "Sending subsequent target #{target}" if target # XXX
-				target.send_changes &target_cb if target
+				if target
+					log "Sending subsequent target #{target}" # XXX
+					target.send_changes &target_cb
+				else
+					yield if block_given?
+				end
 			}
 
 			log "Sending first target #{target}" # XXX
