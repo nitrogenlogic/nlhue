@@ -58,9 +58,9 @@ EM.run do
 			end
 
 			EM.add_timer(26) do
-				STDERR.puts "\n\n\n#{'='*80}\nSwitching to 0.2s updates\n#{'='*80}\n"
+				STDERR.puts "\n\n\n#{'='*80}\nSwitching to 1.2s updates\n#{'='*80}\n"
 				timer1.cancel
-				timer1 = EM.add_periodic_timer 0.2, light_proc
+				timer1 = EM.add_periodic_timer 1.2, light_proc
 			end
 
 			EM.add_timer(33) do
