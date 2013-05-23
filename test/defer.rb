@@ -42,28 +42,29 @@ EM.run do
 				count += 1
 			}
 
+			STDERR.puts "\n\n\n#{'='*80}\nSwitching to 1.15s updates\n#{'='*80}\n"
 			timer1 = EM.add_periodic_timer 1.15, light_proc
 
 			EM.add_timer(10) do
-				puts "\n\n\n#{'='*80}\nSwitching to 0.35s updates\n#{'='*80}\n"
+				STDERR.puts "\n\n\n#{'='*80}\nSwitching to 0.35s updates\n#{'='*80}\n"
 				timer1.cancel
 				timer1 = EM.add_periodic_timer 0.35, light_proc
 			end
 
 			EM.add_timer(20) do
-				puts "\n\n\n#{'='*80}\nSwitching to 0.1s updates\n#{'='*80}\n"
+				STDERR.puts "\n\n\n#{'='*80}\nSwitching to 0.05s updates\n#{'='*80}\n"
 				timer1.cancel
-				timer1 = EM.add_periodic_timer 0.1, light_proc
+				timer1 = EM.add_periodic_timer 0.05, light_proc
 			end
 
 			EM.add_timer(26) do
-				puts "\n\n\n#{'='*80}\nSwitching to 0.2s updates\n#{'='*80}\n"
+				STDERR.puts "\n\n\n#{'='*80}\nSwitching to 0.2s updates\n#{'='*80}\n"
 				timer1.cancel
 				timer1 = EM.add_periodic_timer 0.2, light_proc
 			end
 
 			EM.add_timer(33) do
-				puts "\n\n\n#{'='*80}\nSwitching to 0.7s updates\n#{'='*80}\n"
+				STDERR.puts "\n\n\n#{'='*80}\nSwitching to 0.7s updates\n#{'='*80}\n"
 				timer1.cancel
 				timer1 = EM.add_periodic_timer 0.7, light_proc
 			end
