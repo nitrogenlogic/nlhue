@@ -23,47 +23,47 @@ EM.run do
 
 			count = 0
 			light_proc = proc {
-				count += 1
 				puts "\n\n"
 				log "==================== LIGHT TICK #{count} ===================="
-				br.lights.each_value do |light|
+				br.lights.values.each_with_index do |light, idx|
 					log "Setting values on #{light}"
 					light.defer
 					light.on!
 					light.bri = 255
-					light.hue = rand(360)
-					light.sat = rand(25) + 230
-					light.transitiontime = 1
+					light.hue = count * 31 + idx * 60
+					light.sat = 255
+					light.transitiontime = 0
 
 					count2 = count
 					light.submit do |status, result|
 						log "Finished sending to #{light} for #{count2}"
 					end
 				end
+				count += 1
 			}
 
-			timer1 = EM.add_periodic_timer 0.95, light_proc
+			timer1 = EM.add_periodic_timer 1.15, light_proc
 
 			EM.add_timer(10) do
-				puts "Switching to 0.35s updates"
+				puts "\n\n\n#{'='*80}\nSwitching to 0.35s updates\n#{'='*80}\n"
 				timer1.cancel
 				timer1 = EM.add_periodic_timer 0.35, light_proc
 			end
 
 			EM.add_timer(20) do
-				puts "Switching to 0.1s updates"
+				puts "\n\n\n#{'='*80}\nSwitching to 0.1s updates\n#{'='*80}\n"
 				timer1.cancel
 				timer1 = EM.add_periodic_timer 0.1, light_proc
 			end
 
 			EM.add_timer(26) do
-				puts "Switching to 0.15s updates"
+				puts "\n\n\n#{'='*80}\nSwitching to 0.2s updates\n#{'='*80}\n"
 				timer1.cancel
-				timer1 = EM.add_periodic_timer 0.15, light_proc
+				timer1 = EM.add_periodic_timer 0.2, light_proc
 			end
 
 			EM.add_timer(33) do
-				puts "Swithing to 0.7s updates"
+				puts "\n\n\n#{'='*80}\nSwitching to 0.7s updates\n#{'='*80}\n"
 				timer1.cancel
 				timer1 = EM.add_periodic_timer 0.7, light_proc
 			end
