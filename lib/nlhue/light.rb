@@ -10,8 +10,11 @@ require 'set'
 module NLHue
 	# A class representing a light known to a Hue bridge.  Recommended use
 	# is to get a Light object by calling NLHue::Bridge#lights().
+	#
+	# TODO: Much code is shared with Group; consolidate into a Target
+	# superclass.
 	class Light
-		attr_reader :id, :type, :name
+		attr_reader :id, :type, :name, :bridge
 
 		# bridge - The Bridge that controls this light.
 		# id - The bulb number.
@@ -70,33 +73,38 @@ module NLHue
 		end
 
 		# Call to queue changes to be sent all at once.  Updates will
-		# no longer be sent to the light until send is called, after
-		# which changes will no longer be deferred.
+		# not be sent to the light until #submit is called.  Call
+		# #nodefer to stop deferring changes.
 		def defer
 			@defer = true
 		end
 
-		# Sets the transition time in centiseconds used for the next
-		# call to send.  The transition time will be reset when send is
-		# called.  The transition time will not be set if defer has not
-		# been called.  Call with nil to clear the transition time.
-		def transitiontime= time
-			if @defer
-				time = 0 if time < 0
-				@transitiontime = time.to_i
-			end
+		# Stops deferring changes and sends any queued changes.
+		def nodefer
+			@defer = false
+			set {}
 		end
 
-		# Sends all changes queued since the last call to defer.  The
-		# block, if given, will be called with true and the response on
-		# success, or false and an Exception on error.  The transition
-		# time sent to the bridge can be controlled with
-		# transitiontime=.  If no transition time is set, the default
-		# transition time will be used by the bridge.
-		def send &block
-			send_changes &block
-			@defer = false
-			@transitiontime = nil
+		# Sets the transition time in centiseconds used for the next
+		# immediate parameter change or deferred batch parameter
+		# change.  The transition time will be reset when send_changes
+		# is called.  Call with nil to clear the transition time.
+		def transitiontime= time
+			time = 0 if time < 0
+			@transitiontime = time.to_i
+		end
+
+		# Tells the Bridge object that this Light is ready to have its
+		# deferred data sent.  Bridge will schedule a rate-limited call
+		# to #send_changes, which sends all changes queued since the
+		# last call to defer.  The block, if given, will be called with
+		# true and the response on success, or false and an Exception
+		# on error.  The transition time sent to the bridge can be
+		# controlled with transitiontime=.  If no transition time is
+		# set, the default transition time will be used by the bridge.
+		def submit &block
+			puts "Submitting changes to light #{self}" # XXX
+			@bridge.add_target self, &block
 		end
 
 		# Sets the light to flash once if repeat is false, or several
@@ -285,21 +293,10 @@ module NLHue
 			@info['state']['colormode']
 		end
 
-		private
-		# Sets one or more parameters on the local light, then sends
-		# them to the bridge (unless defer was called).
-		def set params
-			params.each do |k, v|
-				@changes << k
-				@info['state'][k] = v
-			end
-
-			send_changes unless @defer
-		end
-
 		# Sends parameters named in @changes to the bridge.  The block,
 		# if given, will be called with true and the response, or false
-		# and an Exception.
+		# and an Exception.  This should only be called internally or
+		# by the Bridge.
 		def send_changes &block
 			msg = {}
 
@@ -327,6 +324,20 @@ module NLHue
 				@changes.clear if status
 				yield status, result if block_given?
 			end
+
+			@transitiontime = nil
+		end
+
+		private
+		# Sets one or more parameters on the local light, then sends
+		# them to the bridge (unless defer was called).
+		def set params
+			params.each do |k, v|
+				@changes << k
+				@info['state'][k] = v
+			end
+
+			send_changes unless @defer
 		end
 
 		# PUTs the given Hash or Array, converted to JSON, to this

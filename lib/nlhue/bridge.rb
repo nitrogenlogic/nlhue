@@ -31,6 +31,9 @@ module NLHue
 	# queued and sent one at a time to prevent overloading the bridge's
 	# CPU.
 	class Bridge
+		# Seconds to wait between updates to lights and groups.
+		RATE_LIMIT = 0.2
+
 		attr_reader :username, :addr, :serial, :name
 
 		@@bridge_cbs = [] # callbacks notified when a bridge has its first successful update
@@ -82,6 +85,9 @@ module NLHue
 
 			@update_timer = nil
 			@update_callbacks = []
+
+			@rate_timer = nil
+			@rate_targets = {}
 		end
 
 		# Calls the given block with true or false if verification by
@@ -494,7 +500,6 @@ module NLHue
 		# :status if a response was received, or just false on error.
 		# This should be called from the EventMachine reactor thread.
 		def request verb, path, data=nil, content_type='application/json;charset=utf-8', timeout=5, &block
-			# TODO: Coalesce queued requests across lights and groups.
 			raise 'A block must be given.' unless block_given?
 			raise 'Call from the EventMachine reactor thread.' unless EM.reactor_thread?
 
@@ -505,11 +510,85 @@ module NLHue
 			do_next_request if @request_queue.size == 1
 		end
 
+		# Schedules a Light or Group to have its deferred values sent
+		# the next time the rate limiting timer fires, or immediately
+		# if the rate limiting timer has expired.  Starts the rate
+		# limiting timer if it is not running.
+		def add_target t, &block
+			raise 'Target must be a Light or a Group' unless t.is_a?(Light) || t.is_a?(Group)
+			raise "Target is from #{t.bridge.serial} not this bridge (#{@serial})" unless t.bridge == self
+
+			log "Adding deferred target #{t}" # XXX
+
+			@rate_targets[t] ||= []
+			@rate_targets[t] << block if block_given?
+
+			unless @rate_timer
+				log "No rate timer -- sending targets on next tick" # XXX
+
+				# Waiting until the next tick allows multiple
+				# updates to be queued in the current tick that
+				# will all go out at the same time.
+				EM.next_tick do
+					log "It's next tick -- sending targets now" # XXX
+					send_targets
+				end
+
+				log "Setting rate timer"
+				@rate_timer = EM.add_periodic_timer(RATE_LIMIT) do
+					if @rate_targets.empty?
+						log "No targets, canceling rate timer." # XXX
+						@rate_timer.cancel
+						@rate_timer = nil
+					else
+						log "Sending targets from rate timer." # XXX
+						send_targets
+					end
+				end
+			else
+				log "Rate timer is set -- not sending targets now" # XXX
+			end
+		end
+
 		private
 		# Sets this bridge's name (call after getting UPnP XML or
 		# bridge config JSON), removing the IP address if present.
 		def set_name name
 			@name = name.gsub " (#{@addr})", ''
+		end
+
+		# Calls #send_changes on all targets in the rate-limiting
+		# queue, passing the result to each callback that was scheduled
+		# by a call to #submit on the Light or Group.  Clears the
+		# rate-limiting queue.  Calls the block (if given) with no
+		# arguments once all changes scheduled at the time of the
+		# initial call to send_targets have been sent.
+		def send_targets &block
+			targets = @rate_targets.to_a
+			@rate_targets.clear
+
+			return if targets.empty?
+
+			target, cbs = targets.shift
+
+			target_cb = proc {|status, result|
+
+				cbs.each do |cb|
+					begin
+						cb.call status, result if cb
+					rescue => e
+						log_e e, "Error notifying rate limited target #{t} callback #{cb.inspect}"
+					end
+				end
+
+				target, cbs = targets.shift
+				
+				log "Sending subsequent target #{target}" if target # XXX
+				target.send_changes &target_cb if target
+			}
+
+			log "Sending first target #{target}" # XXX
+			target.send_changes &target_cb
 		end
 
 		# Sends a request with the given method/path/etc.  Called by

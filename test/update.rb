@@ -28,7 +28,7 @@ EM.run do
 					light.bri = 255
 					light.hue = rand 360
 					light.sat = rand(75) + 180
-					light.send
+					light.submit
 				end
 			end
 		end
