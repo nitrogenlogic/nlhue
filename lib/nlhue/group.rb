@@ -44,6 +44,7 @@ module NLHue
 			info['lights'].each do |id|
 				@lights << id.to_i
 			end
+			# FIXME: Handle removal of a light from a group
 		end
 
 		# Returns an array containing this group's corresponding Light
