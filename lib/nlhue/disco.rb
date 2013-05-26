@@ -12,11 +12,11 @@ module NLHue
 		MAX_BRIDGE_AGE = 5
 
 		# Number of times a bridge can be missing from discovery if
-		# subscribed (approx. 1000*15=250min if interval is 15).  This
+		# subscribed (approximately one month if interval is 15).  This
 		# number is higher than MAX_BRIDGE_AGE because update failures
 		# (see MAX_BRIDGE_ERR) will detect an offline bridge, and
 		# working bridges sometimes disappear from discovery.
-		MAX_SUBSCRIBED_AGE = 1000
+		MAX_SUBSCRIBED_AGE = 150000
 
 		# Number of times a bridge can fail to update
 		MAX_BRIDGE_ERR = 2
