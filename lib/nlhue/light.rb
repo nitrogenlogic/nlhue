@@ -107,10 +107,29 @@ module NLHue
 			@bridge.add_target self, &block
 		end
 
-		# Returns a Hash containing the light's current state, as sent
-		# to and received from the bridge.
+		# Returns a Hash containing the light's current state, with
+		# symbolized key names and hue scaled to 0..360.  Example:
+		# {
+		#    :on => false,
+		#    :bri => 220,
+		#    :ct => 500,
+		#    :x => 0.5,
+		#    :y => 0.5,
+		#    :hue => 193.5,
+		#    :sat => 255,
+		#    :colormode => 'hs'
+		# }
 		def state
-			@info['state']
+			{
+				:on => on?,
+				:bri => bri,
+				:ct => ct,
+				:x => x,
+				:y => y,
+				:hue => hue,
+				:sat => sat,
+				:colormode => colormode
+			}
 		end
 
 		# Sets the light to flash once if repeat is false, or several
