@@ -107,6 +107,12 @@ module NLHue
 			@bridge.add_target self, &block
 		end
 
+		# Returns a Hash containing the light's current state, as sent
+		# to and received from the bridge.
+		def state
+			@info['state']
+		end
+
 		# Sets the light to flash once if repeat is false, or several
 		# times if repeat is true.
 		def alert! repeat=false

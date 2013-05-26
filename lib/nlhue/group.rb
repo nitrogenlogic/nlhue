@@ -106,6 +106,12 @@ module NLHue
 			@bridge.add_target self, &block
 		end
 
+		# Returns a Hash containing the groups's most recently set
+		# state (if any), as sent to the bridge's group 'action'.
+		def state
+			@info['action']
+		end
+
 		# Sets the group to flash once if repeat is false, or several
 		# times if repeat is true.
 		def alert! repeat=false
