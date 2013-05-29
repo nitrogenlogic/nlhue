@@ -131,7 +131,7 @@ module NLHue
 			{
 				:id => id,
 				:name => name,
-				:lights => lights.to_a,
+				:lights => light_ids,
 				:on => on?,
 				:bri => bri,
 				:ct => ct,
