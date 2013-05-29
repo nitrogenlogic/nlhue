@@ -10,8 +10,8 @@ avail = 0
 
 EM.run do
 
-	disco_cb = NLHue::Disco.add_disco_callback do |event, param|
-		puts "Disco event: #{event}, #{param}"
+	disco_cb = NLHue::Disco.add_disco_callback do |event, param, msg|
+		puts "Disco event: #{event}, #{param}, #{msg}"
 		case event
 		when :start
 			puts "Starting with #{NLHue::Disco.bridges.size} bridge(s)"

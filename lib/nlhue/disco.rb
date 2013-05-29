@@ -87,7 +87,7 @@ module NLHue
 			bridges.each do |serial, info|
 				puts "Removing bridge #{serial} when stopping discovery" # XXX
 				@@bridges.delete serial
-				notify_callbacks :del, info[:bridge]
+				notify_callbacks :del, info[:bridge], 'Stopping Hue Bridge discovery.'
 				info[:bridge].clean
 			end
 			if @@disco_running
@@ -114,8 +114,9 @@ module NLHue
 		# The callback will be called with the following events:
 		# :start - A discovery process has started.
 		# :add, bridge - The given bridge was recently discovered.
-		# :del, bridge - The given bridge was recently removed.  May be called
-		# 		 even if no discovery process is running.
+		# :del, bridge, msg - The given bridge was recently removed
+		# 		      because of [msg].  May be called even
+		# 		      if no discovery process is running.
 		# :end, true/false - A discovery process has ended, and whether there
 		# 		     were changes to the list of bridges.
 		def self.add_disco_callback cb=nil, &block
@@ -257,7 +258,7 @@ module NLHue
 									info = @@bridges[br.serial]
 									@@bridges.delete br.serial
 									br.remove_update_callback info[:cb]
-									notify_bridge_removed br
+									notify_bridge_removed br, 'Error updating bridge.'
 									EM.next_tick do
 										br.clean # next tick to ensure after notify*removed
 										do_disco
@@ -304,7 +305,9 @@ module NLHue
 					if br[:age] > age_limit
 						log "Bridge #{br[:bridge].serial} missing from #{age_limit} rounds of discovery."
 						@@bridges_changed = true
-						notify_bridge_removed br[:bridge]
+						notify_bridge_removed br[:bridge],
+							"Bridge missing from discovery #{br[:age]} times."
+
 						EM.next_tick do
 							br[:bridge].clean # next tick to ensure after notify*removed
 						end
@@ -325,9 +328,9 @@ module NLHue
 		end
 
 		# Notifies all disco callbacks that a bridge was removed.
-		def self.notify_bridge_removed br
+		def self.notify_bridge_removed br, msg
 			EM.next_tick do
-				notify_callbacks :del, br
+				notify_callbacks :del, br, msg
 			end
 		end
 	end

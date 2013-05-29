@@ -5,9 +5,9 @@
 require_relative '../lib/nlhue'
 
 EM.run do
-	disco_cb = NLHue::Disco.add_disco_callback do |event, param|
+	disco_cb = NLHue::Disco.add_disco_callback do |event, param, msg|
 		puts if event == :start
-		puts "Disco event: #{event}, #{param}"
+		puts "Disco event: #{event}, #{param}, #{msg}"
 		if event == :start
 			puts "Starting with #{NLHue::Disco.bridges.size} bridge(s)"
 		elsif event == :end
