@@ -454,8 +454,15 @@ module NLHue
 
 		# JSON object with "addr": [bridge address] and "config":
 		# [config JSON from bridge]
-		def to_json
-			{ :addr => @addr, :name => @name, :serial => @serial, :config => @config }.to_json
+		def to_json *args
+			{
+				:addr => @addr,
+				:name => @name,
+				:serial => @serial,
+				:lights => @lights,
+				:groups => @groups,
+				:config => @config
+			}.to_json(*args)
 		end
 
 		# Makes a GET request to the given path, timing out after the

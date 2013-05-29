@@ -72,6 +72,11 @@ module NLHue
 			@info.clone
 		end
 
+		# Converts the Hash returned by #state to JSON.
+		def to_json *args
+			state.to_json(*args)
+		end
+
 		# Call to queue changes to be sent all at once.  Updates will
 		# not be sent to the light until #submit is called.  Call
 		# #nodefer to stop deferring changes.
