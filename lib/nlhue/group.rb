@@ -106,10 +106,13 @@ module NLHue
 			@bridge.add_target self, &block
 		end
 
-		# Returns a Hash containing the group's most recently set
-		# state, with symbolized key names and hue scaled to 0..360.
-		# Example:
+		# Returns a Hash containing the group's info and most recently
+		# set state, with symbolized key names and hue scaled to
+		# 0..360.  Example:
 		# {
+		#    :id => 0,
+		#    :name => 'Lightset 0',
+		#    :lights => [0, 1, 2],
 		#    :on => false,
 		#    :bri => 220,
 		#    :ct => 500,
@@ -121,6 +124,9 @@ module NLHue
 		# }
 		def state
 			{
+				:id => id,
+				:name => name,
+				:lights => lights.to_a,
 				:on => on?,
 				:bri => bri,
 				:ct => ct,

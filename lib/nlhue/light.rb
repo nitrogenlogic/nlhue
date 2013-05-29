@@ -107,9 +107,12 @@ module NLHue
 			@bridge.add_target self, &block
 		end
 
-		# Returns a Hash containing the light's current state, with
-		# symbolized key names and hue scaled to 0..360.  Example:
+		# Returns a Hash containing the light's info and current state,
+		# with symbolized key names and hue scaled to 0..360.  Example:
 		# {
+		#    :id => 1,
+		#    :name => 'Hue Lamp 2',
+		#    :type => 'Extended color light',
 		#    :on => false,
 		#    :bri => 220,
 		#    :ct => 500,
@@ -121,6 +124,9 @@ module NLHue
 		# }
 		def state
 			{
+				:id => id,
+				:name => name,
+				:type => type,
 				:on => on?,
 				:bri => bri,
 				:ct => ct,
