@@ -454,15 +454,17 @@ module NLHue
 
 		# JSON object with "addr": [bridge address] and "config":
 		# [config JSON from bridge]
+		# Options: :include_config => true -- include raw config returned by the bridge
 		def to_json *args
-			{
+			h = {
 				:addr => @addr,
 				:name => @name,
 				:serial => @serial,
 				:lights => @lights,
-				:groups => @groups,
-				:config => @config
-			}.to_json(*args)
+				:groups => @groups
+			}
+			h[:config] = @config if args[0].is_a?(Hash) && args[0][:include_config]
+			h.to_json(*args)
 		end
 
 		# Makes a GET request to the given path, timing out after the
