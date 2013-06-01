@@ -460,6 +460,7 @@ module NLHue
 				:addr => @addr,
 				:name => @name,
 				:serial => @serial,
+				:registered => @registered,
 				:lights => @lights,
 				:groups => @groups
 			}
