@@ -301,7 +301,9 @@ module NLHue
 					age_limit = br[:bridge].subscribed? ? MAX_SUBSCRIBED_AGE : MAX_BRIDGE_AGE
 
 					if br[:age] > age_limit
-						log "Bridge #{br[:bridge].serial} missing from #{age_limit} rounds of discovery."
+						log "Bridge #{br[:bridge].serial} missing from #{br[:age]} rounds of discovery."
+						log "Bridge #{br[:bridge].serial} subscribed: #{br[:bridge].subscribed?}"
+
 						@@bridges_changed = true
 						notify_bridge_removed br[:bridge],
 							"Bridge missing from discovery #{br[:age]} times."
