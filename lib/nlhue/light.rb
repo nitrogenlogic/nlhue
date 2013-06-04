@@ -357,6 +357,7 @@ module NLHue
 			msg['transitiontime'] = @transitiontime if @transitiontime
 
 			put_light msg do |status, result|
+				@changes.delete('alert') if "#{result}".include?('Device is set to off')
 				@changes.clear if status
 				yield status, result if block_given?
 			end
