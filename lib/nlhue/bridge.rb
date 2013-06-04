@@ -452,10 +452,19 @@ module NLHue
 			str
 		end
 
-		# JSON object with "addr": [bridge address] and "config":
-		# [config JSON from bridge]
-		# Options: :include_config => true -- include raw config returned by the bridge
-		def to_json *args
+		# Returns a Hash with information about this bridge:
+		# {
+		# 	:addr => "[IP address]",
+		# 	:name => "[name]",
+		# 	:serial => "[serial number]",
+		# 	:registered => true/false,
+		# 	:lights => [hash containing Light objects (see #lights)],
+		# 	:groups => [hash containing Group objects (see #groups)],
+		# 	:config => [raw config from bridge] if include_config
+		# }
+		#
+		# Do not modify the included lights and groups hashes.
+		def to_h include_config=false
 			h = {
 				:addr => @addr,
 				:name => @name,
@@ -464,8 +473,14 @@ module NLHue
 				:lights => @lights,
 				:groups => @groups
 			}
-			h[:config] = @config if args[0].is_a?(Hash) && args[0][:include_config]
-			h.to_json(*args)
+			h[:config] = @config if include_config
+			h
+		end
+
+		# Return value of to_h converted to a JSON string.
+		# Options: :include_config => true -- include raw config returned by the bridge
+		def to_json *args
+			to_h(args[0].is_a?(Hash) && args[0][:include_config]).to_json(*args)
 		end
 
 		# Makes a GET request to the given path, timing out after the
