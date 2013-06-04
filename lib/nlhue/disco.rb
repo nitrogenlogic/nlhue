@@ -196,7 +196,9 @@ module NLHue
 
 						dev.addr = ssdp.ip unless dev.addr == ssdp.ip
 
-						unless dev.verified?
+						if dev.verified?
+							yield dev
+						else
 							dev.verify do |result|
 								if result && !con.closed?
 									devs[ssdp.ip] = dev
@@ -240,7 +242,6 @@ module NLHue
 			if br.is_a?(NLHue::Bridge)
 				if @@bridges[br.serial]
 					@@bridges[br.serial][:age] = 0
-					@@bridges[br.serial][:errcount] = 0
 				else
 					@@bridges[br.serial] = { :bridge => br, :age => 0, :errcount => 0 }
 					@@bridges_changed = true
@@ -287,16 +288,13 @@ module NLHue
 			end
 		end
 
-		# Adds new bridges to @@bridges, deletes aged-out bridges,
-		# sends events to callbacks.  Called when the timer set by
-		# #reset_disco_timer expires.
+		# Deletes aged-out bridges, sends disco :del events to
+		# callbacks.  Called when the timer set by #reset_disco_timer
+		# expires.
 		def self.update_bridges bridges
 			bench 'update_bridges' do
 				@@bridges.each do |k, v|
 					v[:age] += 1
-				end
-
-				bridges.each do |br|
 				end
 
 				@@bridges.select! do |k, br|
