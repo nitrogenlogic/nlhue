@@ -57,6 +57,10 @@ module NLHue
 
 				notify_callbacks :start
 
+				@@bridges.each do |k, v|
+					v[:age] += 1
+				end
+
 				reset_disco_timer nil, 5
 				@@disco_connection = send_discovery do |br|
 					if br.is_a? NLHue::Bridge
@@ -293,10 +297,6 @@ module NLHue
 		# expires.
 		def self.update_bridges bridges
 			bench 'update_bridges' do
-				@@bridges.each do |k, v|
-					v[:age] += 1
-				end
-
 				@@bridges.select! do |k, br|
 					age_limit = br[:bridge].subscribed? ? MAX_SUBSCRIBED_AGE : MAX_BRIDGE_AGE
 
