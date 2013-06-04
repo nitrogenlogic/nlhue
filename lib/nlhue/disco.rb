@@ -63,14 +63,18 @@ module NLHue
 
 				reset_disco_timer nil, 5
 				@@disco_connection = send_discovery do |br|
-					if br.is_a? NLHue::Bridge
-						br.username = username if username
-						br.update do |status, result|
-							if @@disco_connection && !@@disco_connection.closed?
-								reset_disco_timer br
-							else
-								# Ignore bridges if disco was shut down
-								br.clean
+					if br.is_a?(NLHue::Bridge) && disco_started?
+						if @@bridges.include?(br.serial) && br.subscribed?
+							reset_disco_timer br
+						else
+							br.username = username if username
+							br.update do |status, result|
+								if disco_started?
+									reset_disco_timer br
+								elsif !@@bridges.include?(br.serial)
+									# Ignore bridges if disco was shut down
+									br.clean
+								end
 							end
 						end
 					end
