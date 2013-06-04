@@ -257,11 +257,6 @@ module NLHue
 						end
 						@lights.select do |id, light|
 							incl = @config['lights'].include? id.to_s
-							unless incl
-								# XXX
-								puts "\n\nRemoving light #{id} from #{@serial}\n\n"
-								puts @config.inspect
-							end
 							incl
 						end
 
@@ -382,15 +377,6 @@ module NLHue
 		# add_bridge_callback, then removes references to
 		# configuration, lights, groups, and update callbacks.
 		def clean
-			# XXX
-			puts "\n\nCleaning bridge #{@serial}\n\n"
-			begin
-				raise 'Cleaning bridge'
-			rescue => e
-				log_e e
-			end
-			# XXX
-
 			was_updated = updated?
 			unsubscribe
 			@registered = false
@@ -445,8 +431,6 @@ module NLHue
 							was_reg = @registered
 							@registered = false
 							Bridge.notify_bridge_callbacks self, false if was_reg
-
-							puts "\n\nBridge #{@serial} no longer registered\n\n" if was_reg
 
 							raise NotRegisteredError.new
 						else
