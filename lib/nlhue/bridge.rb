@@ -220,10 +220,15 @@ module NLHue
 		end
 
 		# Adds a callback to be notified when a subscription update is
-		# received, or when a subscription update fails.  The callback
-		# will be called with true and the update JSON when an update
-		# succeeds, false and the update JSON when an update fails.
-		# The return value may be passed to remove_update_callback.
+		# received, or when a subscription update fails.  The return
+		# value may be passed to remove_update_callback.
+		#
+		# Callback parameters:
+		# Update successful:
+		# 	true, [lights or groups changed: true/false]
+		#
+		# Update failed:
+		# 	false, [exception]
 		def add_update_callback &cb
 			@update_callbacks << cb
 			cb
@@ -237,10 +242,13 @@ module NLHue
 
 		# Updates the Bridge object with the lights, groups, and config
 		# of the Hue bridge.  The given block will be called with true
-		# and the result on success, false and an exception on error.
+		# and whether the lights/groups were changed on success, false
+		# and an exception on error.
 		def update &block
 			get "/api/#{@username}" do |response|
 				status, result = check_json response
+
+				changed = false
 
 				begin
 					if status
@@ -253,10 +261,12 @@ module NLHue
 								@lights[id].handle_json info
 							else
 								@lights[id] = Light.new(self, id, info)
+								changed = true
 							end
 						end
 						@lights.select! do |id, light|
 							incl = @config['lights'].include? id.to_s
+							changed ||= !incl
 							incl
 						end
 
@@ -273,6 +283,7 @@ module NLHue
 										@groups[0].handle_json result
 									else
 										@groups[0] = Group.new(self, 0, result)
+										notify_update_callbacks true, true
 									end
 								end
 							end
@@ -287,10 +298,13 @@ module NLHue
 								@groups[id.to_i].handle_json info
 							else
 								@groups[id.to_i] = Group.new(self, id.to_i, info)
+								changed = true
 							end
 						end
 						@groups.select! do |id, light|
-							@config['groups'].include?(id.to_s) || id == 0
+							incl = @config['groups'].include?(id.to_s) || id == 0
+							changed ||= !incl
+							incl
 						end
 
 						# TODO: schedules
@@ -302,7 +316,8 @@ module NLHue
 					status = false
 					result = e
 				end
-						
+
+				result = changed if status
 				notify_update_callbacks status, result
 
 				yield status, result

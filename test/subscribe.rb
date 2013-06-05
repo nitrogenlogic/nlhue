@@ -17,7 +17,8 @@ EM.run do
 		br.add_update_callback do |status, result|
 			if status
 				count = count + 1
-				puts "Bridge #{br.serial} updated #{count} times"
+				puts "Bridge #{br.serial} updated #{count} times (changed: #{result})"
+				puts "Now #{br.groups.size} groups and #{br.lights.size} lights."
 			else
 				puts "Bridge #{br.serial} failed to update: #{result}"
 			end
