@@ -4,6 +4,10 @@
 # (C)2013 Mike Bourgeous
 
 module NLHue
+	# TODO: Rewrite this from the ground up in a much simpler fashion.  The
+	# current complexity allows things like two simultaneous disco
+	# processes running and makes things difficult to debug.
+
 	# Use #start_discovery and #stop_discovery for continuous bridge
 	# discovery.  Use #send_discovery to perform discovery only once.
 	module Disco
