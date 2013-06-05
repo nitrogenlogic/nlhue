@@ -49,7 +49,7 @@ module NLHue
 			block
 		end
 
-		# Removes the given callback (returned by add_update_callback)
+		# Removes the given callback (returned by add_bridge_callback)
 		# from Bridge first update/unregistration notifications.
 		def self.remove_bridge_callback cb
 			@@bridge_cbs.delete cb
