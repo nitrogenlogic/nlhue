@@ -255,7 +255,7 @@ module NLHue
 								@lights[id] = Light.new(self, id, info)
 							end
 						end
-						@lights.select do |id, light|
+						@lights.select! do |id, light|
 							incl = @config['lights'].include? id.to_s
 							incl
 						end
@@ -265,13 +265,15 @@ module NLHue
 
 						@registered = true
 
-						get_api '/groups/0' do |response|
-							status, result = check_json response
-							if status
-								if @groups[0].is_a? Group
-									@groups[0].handle_json result
-								else
-									@groups[0] = Group.new(self, 0, result)
+						unless @groups[0].is_a? Group
+							get_api '/groups/0' do |response|
+								status, result = check_json response
+								if status
+									if @groups[0].is_a? Group
+										@groups[0].handle_json result
+									else
+										@groups[0] = Group.new(self, 0, result)
+									end
 								end
 							end
 						end
@@ -287,8 +289,8 @@ module NLHue
 								@groups[id.to_i] = Group.new(self, id.to_i, info)
 							end
 						end
-						@groups.select do |id, light|
-							@config['groups'].include? id.to_s
+						@groups.select! do |id, light|
+							@config['groups'].include?(id.to_s) || id == 0
 						end
 
 						# TODO: schedules
