@@ -40,10 +40,21 @@ module NLHue
 		@@bridge_cbs = [] # callbacks notified when a bridge has its first successful update
 
 		# Adds a callback to be called with a Bridge object and a
-		# status each time a Bridge has its first successful update or
-		# becomes unregistered.  Bridge callbacks will be called after
-		# any corresponding :add or :del disco event is delivered.
-		# Returns a Proc object that may be passed to remove_update_cb.
+		# status each time a Bridge has its first successful update,
+		# adds or removes lights or groups, or becomes unregistered.
+		# Bridge callbacks will be called after any corresponding :add
+		# or :del disco event is delivered.  Returns a Proc object that
+		# may be passed to remove_update_cb.
+		#
+		# Callback parameters:
+		# Bridge first update:
+		#	[Bridge], true
+		#
+		# Bridge added/removed lights or groups:
+		#	[Bridge], true
+		#
+		# Bridge unregistered:
+		#	[Bridge], false
 		def self.add_bridge_callback &block
 			@@bridge_cbs << block
 			block
@@ -284,6 +295,7 @@ module NLHue
 									else
 										@groups[0] = Group.new(self, 0, result)
 										notify_update_callbacks true, true
+										Bridge.notify_bridge_callbacks self, true
 									end
 								end
 							end
@@ -309,7 +321,7 @@ module NLHue
 
 						# TODO: schedules
 
-						Bridge.notify_bridge_callbacks self, true if first_update
+						Bridge.notify_bridge_callbacks self, true if first_update || changed
 					end
 				rescue => e
 					log_e e, "Bridge #{@serial} update raised an exception"
