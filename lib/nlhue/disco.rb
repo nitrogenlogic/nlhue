@@ -168,14 +168,14 @@ module NLHue
 
 		# Returns a bridge with the given serial number, if present.
 		def self.get_bridge serial
-			serial = serial.downcase
+			serial &&= serial.downcase
 			@@bridges[serial] && @@bridges[serial][:bridge]
 		end
 
 		# Gets the number of consecutive times a bridge has been
 		# missing from discovery.
 		def self.get_missing_count serial
-			serial = serial.downcase
+			serial &&= serial.downcase
 			@@bridges[serial] && @@bridges[serial][:age]
 		end
 
@@ -183,7 +183,7 @@ module NLHue
 		# update.  This value is only updated if the Bridge object's
 		# subscribe or update methods are called.
 		def self.get_error_count serial
-			serial = serial.downcase
+			serial &&= serial.downcase
 			@@bridges[serial] && @@bridges[serial][:errcount]
 		end
 
