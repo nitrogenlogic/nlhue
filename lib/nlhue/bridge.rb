@@ -89,6 +89,7 @@ module NLHue
 			@registered = false
 			@lights = {}
 			@groups = {}
+			@lightscan = {'lastscan' => 'none'}
 			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
 				@serial = serial.downcase
 			else
@@ -252,8 +253,10 @@ module NLHue
 		end
 
 		# Updates the Bridge object with the lights, groups, and config
-		# of the Hue bridge.  The given block will be called with true
-		# and whether the lights/groups were changed on success, false
+		# of the Hue bridge.  Also updates the current light scan
+		# status on the first update or if the Bridge thinks a scan is
+		# currently active.  On success the given block will be called
+		# with true and whether the lights/groups were changed, false
 		# and an exception on error.
 		def update &block
 			get "/api/#{@username}" do |response|
@@ -321,6 +324,8 @@ module NLHue
 
 						# TODO: schedules
 
+						scan_status true if first_update || @lightscan['lastscan'] == 'active'
+
 						Bridge.notify_bridge_callbacks self, true if first_update || changed
 					end
 				rescue => e
@@ -334,6 +339,57 @@ module NLHue
 
 				yield status, result
 			end
+		end
+
+		# Initiates a scan for new lights.  If a block is given, yields
+		# true if the scan was started, an exception if there was an
+		# error.
+		def scan_lights &block
+			post_api '/lights', nil do |response|
+				begin
+					status, result = check_json response
+					@lightscan['lastscan'] = 'active' if status
+					yield status if block_given?
+				rescue => e
+					yield e
+				end
+			end
+		end
+
+		# Calls the given block (if given) with true and the last known
+		# light scan status from the bridge.  Requests the current scan
+		# status from the bridge if request is true.  The block will be
+		# called with false and an exception if an error occurs during
+		# a request.  Returns the last known scan status.
+		#
+		# The scan status is a Hash with the following form:
+		# {
+		#	'1' => { 'name' => 'New Light 1' }, # If new lights were found
+		#	'2' => { 'name' => 'New Light 2' },
+		#	'lastscan' => 'active'/'none'/ISO8601:2004
+		# }
+		def scan_status request=false, &block
+			if request
+				get_api '/lights/new' do |response|
+					begin
+						status, result = check_json response
+						@lightscan = result if status
+						yield status, result if block_given?
+					rescue => e
+						yield e
+					end
+				end
+			else
+				yield true, @lightscan if block_given?
+			end
+
+			@lightscan unless block_given?
+		end
+
+		# Returns true if a scan for lights is active (as of the last
+		# call to #update), false otherwise.
+		def scan_active?
+			@lightscan['lastscan'] == 'active'
 		end
 
 		# Returns whether the Bridge object has had at least one
@@ -488,6 +544,7 @@ module NLHue
 		# 	:name => "[name]",
 		# 	:serial => "[serial number]",
 		# 	:registered => true/false,
+		# 	:scan => [return value of #scan_status],
 		# 	:lights => [hash containing Light objects (see #lights)],
 		# 	:groups => [hash containing Group objects (see #groups)],
 		# 	:config => [raw config from bridge] if include_config
@@ -500,6 +557,7 @@ module NLHue
 				:name => @name,
 				:serial => @serial,
 				:registered => @registered,
+				:scan => @lightscan,
 				:lights => @lights,
 				:groups => @groups
 			}
@@ -536,6 +594,12 @@ module NLHue
 		# an error.
 		def post path, data, content_type='application/json;charset=utf-8', timeout=5, &block
 			request 'POST', path, data, content_type, timeout, &block
+		end
+
+		# Makes a POST request under the API using this Bridge's stored
+		# username.
+		def post_api subpath, data, content_type='application/json;charset=utf-8', &block
+			post "/api/#{@username}#{subpath}", data, content_type, &block
 		end
 
 		# Makes a PUT request to the given path, with the given data
@@ -641,7 +705,7 @@ module NLHue
 				end
 
 				target, cbs = targets.shift
-				
+
 				if target
 					log "Sending subsequent target #{target}" # XXX
 					target.send_changes &target_cb
