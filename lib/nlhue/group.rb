@@ -371,7 +371,7 @@ module NLHue
 				raise "Message to PUT must be a Hash or an Array, not #{msg.class.inspect}."
 			end
 
-			@bridge.put_api "/groups/#{@id}/action", msg.to_json do |response|
+			@bridge.put_api "/groups/#{@id}/action", msg.to_json, :lights do |response|
 				status, result = @bridge.check_json response
 				yield status, result if block_given?
 			end

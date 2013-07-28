@@ -45,7 +45,7 @@ module NLHue
 		# block, if given, will be called with true and the response on
 		# success, or false and an Exception on error.
 		def update &block
-			@bridge.get_api "/lights/#{@id}" do |response|
+			@bridge.get_api "/lights/#{@id}", :lights do |response|
 				puts "Light update response: #{response}" # XXX
 
 				status, result = @bridge.check_json(response)
@@ -385,7 +385,7 @@ module NLHue
 				raise "Message to PUT must be a Hash or an Array, not #{msg.class.inspect}."
 			end
 
-			@bridge.put_api "/lights/#{@id}/state", msg.to_json do |response|
+			@bridge.put_api "/lights/#{@id}/state", msg.to_json, :lights do |response|
 				status, result = @bridge.check_json response
 				yield status, result if block_given?
 			end

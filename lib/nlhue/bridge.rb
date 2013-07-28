@@ -6,6 +6,8 @@ require 'em/protocols/httpclient'
 require 'rexml/document'
 require 'json'
 
+require_relative 'request_queue'
+
 module NLHue
 	class NotVerifiedError < StandardError
 		def initialize msg="Call .verify() before using the bridge."
@@ -96,6 +98,8 @@ module NLHue
 				@serial = nil
 			end
 
+			@request_queue = NLHue::RequestQueue.new addr, 2
+
 			@update_timer = nil
 			@update_callbacks = []
 
@@ -125,7 +129,7 @@ module NLHue
 				return true
 			end
 
-			get '/description.xml' do |result|
+			@request_queue.get '/description.xml', :info, 4 do |result|
 				puts "Description result: #{result.inspect}" # XXX
 				if result.is_a?(Hash) && result[:status] == 200
 					@desc = REXML::Document.new result[:content]
@@ -182,7 +186,7 @@ module NLHue
 			end
 
 			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
-			post '/api', msg do |response|
+			@request_queue.post '/api', msg, :registration, nil, 6 do |response|
 				status, result = check_json response
 
 				if status
@@ -198,7 +202,7 @@ module NLHue
 			raise NotVerifiedError.new unless @verified
 			check_username username
 
-			delete "/api/#{username}/config/whitelist/#{username}" do |response|
+			@request_queue.delete "/api/#{username}/config/whitelist/#{username}", :registration, 6 do |response|
 				status, result = check_json response
 
 				if @username == username && status
@@ -259,7 +263,7 @@ module NLHue
 		# with true and whether the lights/groups were changed, false
 		# and an exception on error.
 		def update &block
-			get "/api/#{@username}" do |response|
+			@request_queue.get "/api/#{@username}", :info do |response|
 				status, result = check_json response
 
 				changed = false
@@ -290,7 +294,7 @@ module NLHue
 						@registered = true
 
 						unless @groups[0].is_a? Group
-							get_api '/groups/0' do |response|
+							get_api '/groups/0', :info do |response|
 								status, result = check_json response
 								if status
 									if @groups[0].is_a? Group
@@ -370,6 +374,7 @@ module NLHue
 		# }
 		def scan_status request=false, &block
 			if request
+				# TODO: Update group 0 if new lights are found or when a scan completes
 				get_api '/lights/new' do |response|
 					begin
 						status, result = check_json response
@@ -455,6 +460,7 @@ module NLHue
 		def addr= addr
 			@addr = addr
 			@verified = false
+			@request_queue.addr = addr
 		end
 
 		# Unsubscribes from bridge updates, marks this bridge as
@@ -571,75 +577,22 @@ module NLHue
 			to_h(args[0].is_a?(Hash) && args[0][:include_config]).to_json(*args)
 		end
 
-		# Makes a GET request to the given path, timing out after the
-		# given number of seconds, and calling the given block with a
-		# hash containing :content, :headers, and :status, or just
-		# false if there was an error.
-		def get path, timeout=5, &block
-			# FIXME: Use em-http-request instead of HttpClient,
-			# which returns an empty :content field for /description.xml
-			request 'GET', path, nil, nil, timeout, &block
-		end
-
 		# Makes a GET request under the API using this Bridge's stored
 		# username.
-		def get_api subpath, &block
-			get "/api/#{@username}#{subpath}", &block
-		end
-
-		# Makes a POST request to the given path, with the given data
-		# and content type, timing out after the given number of
-		# seconds, and calling the given block with a hash containing
-		# :content, :headers, and :status, or just false if there was
-		# an error.
-		def post path, data, content_type='application/json;charset=utf-8', timeout=5, &block
-			request 'POST', path, data, content_type, timeout, &block
+		def get_api subpath, category=nil, &block
+			@request_queue.get "/api/#{@username}#{subpath}", &block
 		end
 
 		# Makes a POST request under the API using this Bridge's stored
 		# username.
-		def post_api subpath, data, content_type='application/json;charset=utf-8', &block
-			post "/api/#{@username}#{subpath}", data, content_type, &block
-		end
-
-		# Makes a PUT request to the given path, with the given data
-		# and content type, timing out after the given number of
-		# seconds, and calling the given block with a hash containing
-		# :content, :headers, and :status, or just false if there was
-		# an error.
-		def put path, data, content_type='application/json;charset=utf-8', timeout=5, &block
-			request 'PUT', path, data, content_type, timeout, &block
+		def post_api subpath, data, category=nil, content_type=nil, &block
+			@request_queue.post "/api/#{@username}#{subpath}", data, category, content_type, &block
 		end
 
 		# Makes a PUT request under the API using this Bridge's stored
 		# username.
-		def put_api subpath, data, content_type='application/json;charset=utf-8', &block
-			put "/api/#{@username}#{subpath}", data, content_type, &block
-		end
-
-		# Makes a DELETE request to the given path, timing out after
-		# the given number of seconds, and calling the given block with
-		# a hash containing :content, :headers, and :status, or just
-		# false if there was an error.
-		def delete path, timeout=5, &block
-			request 'DELETE', path, nil, nil, timeout, &block
-		end
-
-		# Queues a request of the given type to the given path, using
-		# the given data and content type for e.g. PUT and POST.  The
-		# request will time out after timeout seconds.  The given block
-		# will be called with a hash containing :content, :headers, and
-		# :status if a response was received, or just false on error.
-		# This should be called from the EventMachine reactor thread.
-		def request verb, path, data=nil, content_type='application/json;charset=utf-8', timeout=5, &block
-			raise 'A block must be given.' unless block_given?
-			raise 'Call from the EventMachine reactor thread.' unless EM.reactor_thread?
-
-			@request_queue ||= []
-
-			req = [verb, path, data, content_type, timeout, block]
-			@request_queue << req
-			do_next_request if @request_queue.size == 1
+		def put_api subpath, data, category=nil, content_type=nil, &block
+			@request_queue.put "/api/#{@username}#{subpath}", data, category, content_type, &block
 		end
 
 		# Schedules a Light or Group to have its deferred values sent
@@ -716,50 +669,6 @@ module NLHue
 
 			log "Sending first target #{target}" # XXX
 			target.send_changes &target_cb
-		end
-
-		# Sends a request with the given method/path/etc.  Called by
-		# #do_next_request.  See #request.
-		def do_request verb, path, data=nil, content_type, timeout, &block
-			req = EM::P::HttpClient.request(
-				verb: verb,
-				host: @addr,
-				request: path,
-				content: data,
-				contenttype: content_type,
-			)
-			req.callback {|response|
-				begin
-					yield response
-				rescue => e
-					log_e e, "Error calling a Hue bridge's request callback."
-				end
-
-				@request_queue.shift
-				do_next_request
-			}
-			req.errback {
-				req.close_connection # For timeout
-				begin
-					yield false
-				rescue => e
-					log_e e, "Error calling a Hue bridge's request callback with error."
-				end
-
-				@request_queue.shift
-				do_next_request
-			}
-			req.timeout 5
-		end
-
-		# Shifts a request off the request queue (if it is not empty),
-		# then passes it to #do_request.  See #request.
-		def do_next_request
-			unless @request_queue.empty?
-				req = @request_queue.first
-				block = req.pop
-				do_request *req, &block
-			end
 		end
 
 		# Calls all callbacks added using #add_update_callback with the
