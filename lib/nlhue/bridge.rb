@@ -496,15 +496,27 @@ module NLHue
 		# Deletes the given NLHue::Group on this bridge.  Raises an
 		# exception if the group is group 0.  Calls the given block
 		# with true and a message on success, or false and an error on
-		# failure.
+		# failure.  Bridge notification callbacks will be called after
+		# the result is yielded.
 		def delete_group group, &block
 			raise "No group was given to delete" if group.nil?
 			raise "Group must be a NLHue::Group object" unless group.is_a?(Group)
 			raise "Group is not from this bridge" unless group.bridge == self
 			raise "Cannot delete group 0" if group.id == 0
 
-			# TODO: delete_api
-			raise NotImplementedError.new 'Group deletion is not implemented.'
+			delete_api "/groups/#{group.id}", :lights do |response|
+				status, result = check_json response
+
+				if status
+					@groups.delete group.id
+				end
+
+				yield status, result if block_given?
+
+				if status
+					Bridge.notify_bridge_callbacks self, true
+				end
+			end
 		end
 
 		# Sets the username used to interact with the bridge.
@@ -652,6 +664,12 @@ module NLHue
 		# username.
 		def put_api subpath, data, category=nil, content_type=nil, &block
 			@request_queue.put "/api/#{@username}#{subpath}", data, category, content_type, &block
+		end
+
+		# Makes a DELETE request under the API using this Bridge's
+		# stored username.
+		def delete_api subpath, category=nil, &block
+			@request_queue.delete "/api/#{@username}#{subpath}", category, &block
 		end
 
 		# Schedules a Light or Group to have its deferred values sent
