@@ -457,7 +457,7 @@ module NLHue
 
 			light_ids = []
 			lights.each do |l|
-				raise "All given lights must be NLHue::Light objects" unless l.is_a?(NLHue::Light)
+				raise "All given lights must be NLHue::Light objects" unless l.is_a?(Light)
 				raise "Light #{l.id} (#{l.name}) is not from this bridge." if l.bridge != self
 
 				light_ids << l.id.to_s
@@ -465,8 +465,22 @@ module NLHue
 
 			group_data = { :lights => light_ids, :name => name }.to_json
 			post_api '/groups', group_data, :lights do |response|
-				puts "\n\n\n#{response.inspect}\n\n\n" # XXX
-				yield true, response # XXX
+				status, result = check_json response
+
+				begin
+					result = result.first if result.is_a? Array
+
+					if status && result['success']
+						id = result['success']['id'].split('/').last.to_i
+						raise "Invalid ID received for new group: '#{result['success']['id']}'" unless id > 0
+
+						yield true, Group.new(self, id, { 'name' => name, 'lights' => light_ids })
+					else
+						raise result
+					end
+				rescue => e
+					yield false, e
+				end
 			end
 		end
 
@@ -476,12 +490,12 @@ module NLHue
 		# failure.
 		def delete_group group, &block
 			raise "No group was given to delete" if group.nil?
-			raise "Group must be a NLHue::Group object" unless group.is_a?(NLHue::Group)
+			raise "Group must be a NLHue::Group object" unless group.is_a?(Group)
 			raise "Group is not from this bridge" unless group.bridge == self
 			raise "Cannot delete group 0" if group.id == 0
 
 			# TODO: delete_api
-			raise NotImplementedError 'Group deletion is not implemented.'
+			raise NotImplementedError.new 'Group deletion is not implemented.'
 		end
 
 		# Sets the username used to interact with the bridge.

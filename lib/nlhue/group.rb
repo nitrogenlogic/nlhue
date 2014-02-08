@@ -37,14 +37,18 @@ module NLHue
 		# Updates this group's name and membership with the given Hash
 		# parsed from the bridge's JSON.
 		def handle_json info
-			@info = info if info
-			@name = info ? info['name'] :
-				@name ? @name :
-				"Lightset #{id}"
-			info['lights'].each do |id|
-				@lights << id.to_i
+			@info = info if info.is_a?(Hash)
+
+			@name = @info['name'] || @name || "Lightset #{id}"
+
+			# A group returns no lights for a short time after creation
+			if info && ['lights'].is_a?(Array) && !info['lights'].empty?
+				@lights = info['lights'].map(&:to_i)
 			end
-			# FIXME: Handle removal of a light from a group
+
+			# A group's action contains no 'xy' for a short time after creation
+			@info['action'] ||= {}
+			@info['action']['xy'] ||= [0.5, 0.5]
 		end
 
 		# Returns an array containing this group's corresponding Light
