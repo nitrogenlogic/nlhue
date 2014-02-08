@@ -309,10 +309,6 @@ module NLHue
 						end
 
 						@config['groups'].each do |id, info|
-							# With no idea what the group configuration
-							# will look like at this point, I'm guessing
-							# that it is similar to the lights.
-							# TODO: Test with actual groups
 							if @groups[id.to_i].is_a? Group
 								@groups[id.to_i].handle_json info
 							else
