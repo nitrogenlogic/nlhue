@@ -22,18 +22,24 @@ EM.run do
 				puts "Group creation result: #{status} group: #{group}"
 				puts group.backtrace if group.is_a? Exception
 
-				puts "Turning on group..."
-				group.on!
-				group.effect = 'colorloop'
-				group.send_changes do |status, result|
-					puts "Group modification result: #{status}, #{result}"
+				# New groups can take a few seconds before
+				# their status and lights show up on the bridge
+				puts "Waiting for bridge to initialize group..."
+				EM.add_timer(3) do
+					puts "Turning on group..."
+					group.defer
+					group.on!
+					group.effect = 'colorloop'
+					group.submit do |status, result|
+						puts "Group modification result: #{status}, #{result}"
 
-					puts "Deleting group..."
-					bridge.delete_group group do |status, result|
-						puts "Group deletion result: #{status}, #{result}"
+						puts "Deleting group..."
+						bridge.delete_group group do |status, result|
+							puts "Group deletion result: #{status}, #{result}"
 
-						puts "Exiting..."
-						EM.stop_event_loop
+							puts "Exiting..."
+							EM.stop_event_loop
+						end
 					end
 				end
 			end
