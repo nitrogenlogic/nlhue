@@ -51,6 +51,26 @@ module NLHue
 			@info['action']['xy'] ||= [0.5, 0.5]
 		end
 
+		# Gets the current state of this group from the bridge.  The
+		# block, if given, will be called with true and the response on
+		# success, or false and an Exception on error.
+		def update &block
+			@bridge.get_api "/groups/#{@id}", :groups do |response|
+				puts "Group update response: #{response}" # XXX
+
+				status, result = @bridge.check_json(response)
+
+				begin
+					handle_json result
+				rescue => e
+					status = false
+					result = e
+				end
+
+				yield status, result if block_given?
+			end
+		end
+
 		# Returns an array containing this group's corresponding Light
 		# objects from the Bridge.
 		def lights

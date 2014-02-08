@@ -450,7 +450,11 @@ module NLHue
 
 		# Creates a new group with the given name and list of lights.
 		# The given block will be called with true and a NLHue::Group
-		# object on success, false and an error on failure.
+		# object on success, false and an error on failure.  If group
+		# creation succeeds, all bridge callbacks added with
+		# Bridge.add_bridge_callback will be notified after the new
+		# group is yielded to the block (if a block is given).  Note
+		# that the group's name may be changed by the bridge.
 		def create_group name, lights, &block
 			raise "No group name was given" unless name.is_a?(String) && name.length > 0
 			raise "No lights were given" unless lights.is_a?(Array) && lights.length > 0
@@ -474,12 +478,21 @@ module NLHue
 						id = result['success']['id'].split('/').last.to_i
 						raise "Invalid ID received for new group: '#{result['success']['id']}'" unless id > 0
 
-						yield true, Group.new(self, id, { 'name' => name, 'lights' => light_ids })
+						group = Group.new(self, id, { 'name' => name, 'lights' => light_ids, 'action' => {} })
+						group.update do |upstatus, upresult|
+							if upstatus
+								@groups[id] = group
+								Bridge.notify_bridge_callbacks self, true
+								yield true, group if block_given?
+							else
+								yield upstatus, upresult if block_given?
+							end
+						end
 					else
 						raise result
 					end
 				rescue => e
-					yield false, e
+					yield false, e if block_given?
 				end
 			end
 		end
