@@ -18,7 +18,7 @@ EM.run do
 			puts result.backtrace if result.is_a? Exception
 
 			puts "Creating group..."
-			bridge.create_group "Test Group", bridge.lights.select{|l| l.id.odd? } do |status, group|
+			bridge.create_group "Test Group", bridge.lights.values.select{|l| l.id.odd? } do |status, group|
 				puts "Group creation result: #{status} group: #{group}"
 
 				puts "Turning on group..."

@@ -460,7 +460,7 @@ module NLHue
 				raise "All given lights must be NLHue::Light objects" unless l.is_a?(NLHue::Light)
 				raise "Light #{l.id} (#{l.name}) is not from this bridge." if l.bridge != self
 
-				light_ids << l.id
+				light_ids << l.id.to_s
 			end
 
 			group_data = { :lights => light_ids, :name => name }.to_json
