@@ -1,5 +1,5 @@
 Yet another Ruby library for interfacing with the Philips Hue lighting system.
-(C)2013 Mike Bourgeous
+(C)2014 Mike Bourgeous
 
 This library was created because many of the other fine Ruby Hue libraries
 lacked a clear license agreement, were only partially implemented, and/or

@@ -1,5 +1,5 @@
 # A class representing a Hue bridge.
-# (C)2013 Mike Bourgeous
+# (C)2014 Mike Bourgeous
 
 require 'eventmachine'
 require 'em/protocols/httpclient'
@@ -446,6 +446,42 @@ module NLHue
 		# default group that contains all lights known to the bridge.
 		def num_groups
 			@groups.length
+		end
+
+		# Creates a new group with the given name and list of lights.
+		# The given block will be called with true and a NLHue::Group
+		# object on success, false and an error on failure.
+		def create_group name, lights, &block
+			raise "No group name was given" unless name.is_a?(String) && name.length > 0
+			raise "No lights were given" unless lights.is_a?(Array) && lights.length > 0
+
+			light_ids = []
+			lights.each do |l|
+				raise "All given lights must be NLHue::Light objects" unless l.is_a?(NLHue::Light)
+				raise "Light #{l.id} (#{l.name}) is not from this bridge." if l.bridge != self
+
+				light_ids << l.id
+			end
+
+			group_data = { :lights => light_ids, :name => name }.to_json
+			post_api '/groups', group_data, :lights do |response|
+				puts "\n\n\n#{response.inspect}\n\n\n" # XXX
+				yield true, response # XXX
+			end
+		end
+
+		# Deletes the given NLHue::Group on this bridge.  Raises an
+		# exception if the group is group 0.  Calls the given block
+		# with true and a message on success, or false and an error on
+		# failure.
+		def delete_group group, &block
+			raise "No group was given to delete" if group.nil?
+			raise "Group must be a NLHue::Group object" unless group.is_a?(NLHue::Group)
+			raise "Group is not from this bridge" unless group.bridge == self
+			raise "Cannot delete group 0" if group.id == 0
+
+			# TODO: delete_api
+			raise NotImplementedError 'Group deletion is not implemented.'
 		end
 
 		# Sets the username used to interact with the bridge.
