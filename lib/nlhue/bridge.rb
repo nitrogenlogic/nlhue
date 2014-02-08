@@ -98,7 +98,7 @@ module NLHue
 				@serial = nil
 			end
 
-			@request_queue = NLHue::RequestQueue.new addr, 2
+			@request_queue = NLHue::RequestQueue.new addr, ENV['NLHUE_TIMEOUT'] || 2
 
 			@update_timer = nil
 			@update_callbacks = []

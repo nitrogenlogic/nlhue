@@ -11,7 +11,7 @@ end
 # Logging method that may be overridden by library users.
 unless private_methods.include?(:log)
 	def log msg
-		puts msg
+		STDOUT.puts msg
 	end
 end
 
@@ -20,9 +20,9 @@ unless private_methods.include?(:log_e)
 	def log_e e, msg=nil
 		e ||= StandardError.new('No exception given to log')
 		if msg
-			puts "#{msg}: #{e}", e.backtrace
+			STDERR.puts "#{msg}: #{e}", e.backtrace
 		else
-			puts e, e.backtrace
+			STDERR.puts e, e.backtrace
 		end
 	end
 end
