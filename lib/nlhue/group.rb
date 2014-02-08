@@ -56,8 +56,6 @@ module NLHue
 		# success, or false and an Exception on error.
 		def update &block
 			@bridge.get_api "/groups/#{@id}", :groups do |response|
-				puts "Group update response: #{response}" # XXX
-
 				status, result = @bridge.check_json(response)
 
 				begin
