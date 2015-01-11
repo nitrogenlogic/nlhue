@@ -35,6 +35,10 @@ module NLHue
 			@changes.each do |key|
 				info['state'][key] = @info['state'][key]
 			end
+
+			# Add fake xy color for lamps that don't support color
+			info['state']['xy'] ||= [0.33333, 0.33333]
+
 			@info = info
 			@type = info['type']
 			@name = info['name']
