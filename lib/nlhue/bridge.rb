@@ -37,7 +37,7 @@ module NLHue
 		# more updates to lights and groups.
 		RATE_LIMIT = 0.2
 
-		attr_reader :username, :addr, :serial, :name
+		attr_reader :username, :addr, :serial, :name, :whitelist
 
 		@@bridge_cbs = [] # callbacks notified when a bridge has its first successful update
 
@@ -92,6 +92,7 @@ module NLHue
 			@lights = {}
 			@groups = {}
 			@scenes = {}
+			@whitelist = {}
 			@lightscan = {'lastscan' => 'none'}
 			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
 				@serial = serial.downcase
@@ -336,6 +337,12 @@ module NLHue
 							incl = @config['scenes'].include?(id.to_s)
 							changed ||= !incl
 							incl
+						end
+
+						wl = @config['config']['whitelist']
+						if wl != @whitelist
+							@whitelist = wl
+							changed = true
 						end
 
 						if changed
