@@ -16,6 +16,7 @@ EM.run do
 	end
 	bridge_cb = NLHue::Bridge.add_bridge_callback do |bridge, status|
 		puts "Bridge event: #{bridge.serial} is now #{status ? 'available' : 'unavailable'}"
+		bridge.update if status && !bridge.registered?
 	end
 
 	puts "--- Starting discovery"

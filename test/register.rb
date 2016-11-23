@@ -10,7 +10,7 @@ EM.run do
 	end
 	NLHue::Disco.send_discovery(3) do |response|
 		puts "Registering with #{response}"
-		response.register 'testing123', 'Test Device' do |status, result|
+		response.register 'Test Device (nlhue)' do |status, result|
 			puts "Register result: #{status}, #{result}"
 
 			puts "\nUpdating #{response}"
@@ -18,13 +18,17 @@ EM.run do
 				puts "Update result: #{status}, #{result}"
 				
 				puts "\nUnregistering."
-				response.unregister 'testing123' do |status, result|
+				response.unregister do |status, result|
 					puts "Unregister result: #{status}, #{result}"
+					EM.next_tick do
+						EM.stop_event_loop
+                                        end
 				end
 			end
 		end
 	end
-	EM.add_timer(3) do
+	EM.add_timer(5) do
+		puts "Timed out after 5 seconds"
 		EM.stop_event_loop
 	end
 end
