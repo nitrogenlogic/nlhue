@@ -85,7 +85,7 @@ module NLHue
 		def initialize addr, serial = nil
 			@addr = addr
 			@verified = false
-			@username = 'invalid'
+			@username = nil
 			@name = nil
 			@config = nil
 			@registered = false
@@ -618,6 +618,7 @@ module NLHue
 		# Throws errors if the given username is invalid (may not catch
 		# all invalid names).
 		def check_username username
+			raise 'Username must be a String' unless username.is_a?(String)
 			raise 'Username must be >= 10 characters.' unless username.to_s.length >= 10
 			raise 'Spaces are not permitted in usernames.' if username =~ /[[:space:]]/
 		end
