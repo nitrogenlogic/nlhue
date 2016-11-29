@@ -43,15 +43,20 @@ module NLHue
 		@@disco_connection = nil
 
 		# Starts a timer that periodically discovers Hue bridges.  If
-		# the username is specified, the Bridge objects' username will
-		# be set before trying to update.
+		# the username is a String or a Hash mapping bridge serial
+		# numbers (String or Symbol) to usernames, the Bridge objects'
+		# username will be set before trying to update.
+		#
 		# Using very short intervals may overload Hue bridges, causing
 		# light and group commands to be delayed or erratic.
 		def self.start_discovery username=nil, interval=15
 			raise 'Discovery is already running' if @@disco_timer || @@disco_running
-			raise 'Username must be a String' unless username.is_a? String
 			raise 'Interval must be a number' unless interval.is_a? Numeric
 			raise 'Interval must be >= 1' unless interval >= 1
+
+			unless username.nil? || username.is_a?(String) || username.is_a?(Hash)
+				raise 'Username must be nil, a String, or a Hash'
+			end
 
 			@@disco_interval = interval
 
@@ -71,7 +76,8 @@ module NLHue
 						if @@bridges.include?(br.serial) && br.subscribed?
 							reset_disco_timer br
 						else
-							br.username = username if username
+							u = lookup_username(br, username)
+							br.username = u if u
 							br.update do |status, result|
 								if disco_started?
 									reset_disco_timer br
@@ -343,6 +349,14 @@ module NLHue
 			EM.next_tick do
 				notify_callbacks :del, br, msg
 			end
+		end
+
+		# Finds a username in the given String or Hash of +usernames+
+		# that matches the given +bridge+ serial number (String or
+		# Symbol).  Returns +usernames+ directly if it's a String.
+		def self.lookup_username(bridge, usernames)
+			return usernames if usernames.is_a?(String)
+		        return (usernames[bridge.serial] || usernames[bridge.serial.to_sym]) if usernames.is_a?(Hash)
 		end
 	end
 end

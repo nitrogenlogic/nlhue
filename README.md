@@ -3,9 +3,13 @@
 
 &copy;2012-2016 Mike Bourgeous, Nitrogen Logic
 
-This library was created because many of the other fine Ruby Hue libraries
+This Gem was created because in 2012 many of the other fine Ruby Hue libraries
 lacked a clear license agreement, were only partially implemented, and/or
 required far too many third-party Gems for my use.
+
+NLHue uses an asynchronous callback-based API built on EventMachine.  It's not
+exactly easy to use, and not recommended for non-EventMachine-based
+applications.
 
 ## Installation
 

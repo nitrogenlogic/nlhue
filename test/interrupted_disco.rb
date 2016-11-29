@@ -5,6 +5,8 @@
 
 require_relative '../lib/nlhue'
 
+USER = ENV['HUE_USER'] || 'testing1234'
+
 running = false
 avail = 0
 
@@ -33,7 +35,7 @@ EM.run do
 	10.times do |time|
 		EM.add_timer(time * 5) do
 			puts "\n\n--- Starting discovery #{time}"
-			NLHue::Disco.start_discovery('testing1234', 1)
+			NLHue::Disco.start_discovery(USER, 1)
 		end
 
 		# FIXME: A race condition exists that allows start_discovery

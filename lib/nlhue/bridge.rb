@@ -37,7 +37,7 @@ module NLHue
 		# more updates to lights and groups.
 		RATE_LIMIT = 0.2
 
-		attr_reader :username, :addr, :serial, :name
+		attr_reader :username, :addr, :serial, :name, :whitelist
 
 		@@bridge_cbs = [] # callbacks notified when a bridge has its first successful update
 
@@ -85,13 +85,14 @@ module NLHue
 		def initialize addr, serial = nil
 			@addr = addr
 			@verified = false
-			@username = 'invalid'
+			@username = nil
 			@name = nil
 			@config = nil
 			@registered = false
 			@lights = {}
 			@groups = {}
 			@scenes = {}
+			@whitelist = {}
 			@lightscan = {'lastscan' => 'none'}
 			if serial && serial =~ /^[0-9A-Fa-f]{12}$/
 				@serial = serial.downcase
@@ -167,47 +168,50 @@ module NLHue
 			end
 		end
 
-		# Attempts to register the given username with the Bridge.  The
-		# block will be called with true and the result if registration
-		# succeeds, false and an exception if not.  If registration
-		# succeeds, the Bridge's current username will be set to the
-		# given username.  If the username is the current username
-		# assigned to this Bridge object, and it already appears to be
-		# registered, it will not be re-registered, and the block will
-		# be called with true and a message.  Call #update after
-		# registration succeeds.  #registered? will not return true
-		# until #update has succeeded.
-		def register username, devicetype, &block
+		# Attempts to register with the Bridge.  The block will be
+		# called with true and the result array  if registration
+		# succeeds, false and an Exception if not.  If registration
+		# succeeds, the Bridge object's current username will be set to
+		# the username returned by the bridge.  If the Bridge is
+		# already registered it will not be re-registered, and the
+		# block will be called with true and the current username.
+		# Call #update after registration succeeds.  #registered? will
+		# not return true until #update has succeeded.
+		def register devicetype, &block
 			raise NotVerifiedError.new unless @verified
-			check_username username
 
-			if username == @username && @registered
-				yield true, 'Already registered.'
+			if @username && @registered
+				yield true, @username
 				return
 			end
 
-			msg = %Q{{"username":#{username.to_json},"devicetype":#{devicetype.to_json}}}
+			msg = %Q{{"devicetype":#{devicetype.to_json}}}
 			@request_queue.post '/api', msg, :registration, nil, 6 do |response|
 				status, result = check_json response
 
 				if status
-					@username = username
+					@username = result.first['success']['username']
 				end
 
 				yield status, result
 			end
 		end
 
-		# Deletes the given username from the Bridge's whitelist.
-		def unregister username, &block
+		# Deletes the given +username+ (or this Bridge object's current
+		# username if +username+ is nil) from the Bridge's whitelist,
+		# sets this Bridge's username to nil, and sets its registered
+		# state to false.
+		def unregister username = nil, &block
 			raise NotVerifiedError.new unless @verified
-			check_username username
+
+			username ||= @username
 
 			@request_queue.delete "/api/#{username}/config/whitelist/#{username}", :registration, 6 do |response|
 				status, result = check_json response
 
 				if @username == username && status
 					@registered = false
+					@username = nil
 					Bridge.notify_bridge_callbacks self, false
 				end
 
@@ -301,7 +305,7 @@ module NLHue
 							@groups[0] = Group.new(self, 0)
 							get_api '/groups/0', :info do |response|
 								status, result = check_json response
-								if status
+								if status && @groups[0]
 									@groups[0].handle_json result
 								end
 							end
@@ -333,6 +337,12 @@ module NLHue
 							incl = @config['scenes'].include?(id.to_s)
 							changed ||= !incl
 							incl
+						end
+
+						wl = @config['config']['whitelist']
+						if wl != @whitelist
+							@whitelist = wl
+							changed = true
 						end
 
 						if changed
@@ -570,7 +580,9 @@ module NLHue
 			end
 		end
 
-		# Sets the username used to interact with the bridge.
+		# Sets the +username+ used to interact with the bridge.  This
+		# should be a username obtained from a previously registered
+		# Bridge.
 		def username= username
 			check_username username
 			@username = username
@@ -606,6 +618,7 @@ module NLHue
 		# Throws errors if the given username is invalid (may not catch
 		# all invalid names).
 		def check_username username
+			raise 'Username must be a String' unless username.is_a?(String)
 			raise 'Username must be >= 10 characters.' unless username.to_s.length >= 10
 			raise 'Spaces are not permitted in usernames.' if username =~ /[[:space:]]/
 		end
