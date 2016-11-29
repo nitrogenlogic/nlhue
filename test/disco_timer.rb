@@ -4,6 +4,8 @@
 
 require_relative '../lib/nlhue'
 
+USER = ENV['HUE_USER'] || 'testing1234'
+
 EM.run do
 	disco_cb = NLHue::Disco.add_disco_callback do |event, param, msg|
 		puts if event == :start
@@ -20,7 +22,7 @@ EM.run do
 	end
 
 	puts "--- Starting discovery"
-	NLHue::Disco.start_discovery('testing1234', 1)
+	NLHue::Disco.start_discovery(USER, 1)
 
 	EM.add_timer(10) do
 		puts "\n\n--- Stopping discovery"
@@ -30,7 +32,7 @@ EM.run do
 	EM.add_timer(12) do
 		puts "\n\n--- Starting discovery"
 		NLHue::Disco.add_disco_callback disco_cb
-		NLHue::Disco.start_discovery('testing1234', 1)
+		NLHue::Disco.start_discovery(USER, 1)
 	end
 
 	EM.add_timer(19) do
