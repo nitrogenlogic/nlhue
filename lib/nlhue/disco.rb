@@ -44,8 +44,8 @@ module NLHue
 
 		# Starts a timer that periodically discovers Hue bridges.  If
 		# the username is a String or a Hash mapping bridge serial
-		# numbers to usernames, the Bridge objects' username will be
-		# set before trying to update.
+		# numbers (String or Symbol) to usernames, the Bridge objects'
+		# username will be set before trying to update.
 		#
 		# Using very short intervals may overload Hue bridges, causing
 		# light and group commands to be delayed or erratic.
@@ -351,12 +351,12 @@ module NLHue
 			end
 		end
 
-                # Finds a username in the given String or Hash of +usernames+
-                # that matches the given +bridge+.  Returns +usernames+
-                # directly if it's a String.
+		# Finds a username in the given String or Hash of +usernames+
+		# that matches the given +bridge+ serial number (String or
+		# Symbol).  Returns +usernames+ directly if it's a String.
 		def self.lookup_username(bridge, usernames)
 			return usernames if usernames.is_a?(String)
-			return usernames[bridge.serial] if usernames.is_a?(Hash)
+		        return (usernames[bridge.serial] || usernames[bridge.serial.to_sym]) if usernames.is_a?(Hash)
 		end
 	end
 end
