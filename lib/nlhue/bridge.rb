@@ -268,7 +268,7 @@ module NLHue
 		# with true and whether the lights/groups were changed, false
 		# and an exception on error.
 		def update &block
-			@request_queue.get "/api/#{@username}", :info do |response|
+			@request_queue.get "/api/#{api_key}", :info do |response|
 				status, result = check_json response
 
 				changed = false
@@ -717,25 +717,25 @@ module NLHue
 		# Makes a GET request under the API using this Bridge's stored
 		# username.
 		def get_api subpath, category=nil, &block
-			@request_queue.get "/api/#{@username}#{subpath}", &block
+			@request_queue.get "/api/#{api_key}#{subpath}", &block
 		end
 
 		# Makes a POST request under the API using this Bridge's stored
 		# username.
 		def post_api subpath, data, category=nil, content_type=nil, &block
-			@request_queue.post "/api/#{@username}#{subpath}", data, category, content_type, &block
+			@request_queue.post "/api/#{api_key}#{subpath}", data, category, content_type, &block
 		end
 
 		# Makes a PUT request under the API using this Bridge's stored
 		# username.
 		def put_api subpath, data, category=nil, content_type=nil, &block
-			@request_queue.put "/api/#{@username}#{subpath}", data, category, content_type, &block
+			@request_queue.put "/api/#{api_key}#{subpath}", data, category, content_type, &block
 		end
 
 		# Makes a DELETE request under the API using this Bridge's
 		# stored username.
 		def delete_api subpath, category=nil, &block
-			@request_queue.delete "/api/#{@username}#{subpath}", category, &block
+			@request_queue.delete "/api/#{api_key}#{subpath}", category, &block
 		end
 
 		# Schedules a Light, Scene, or Group to have its deferred values
@@ -771,6 +771,13 @@ module NLHue
 		end
 
 		private
+		# Returns the string to use in API URLs as the API key (the
+		# bridge username if registered, or an obviously invalid string
+		# otherwise).
+		def api_key
+			@username || 'unknown'
+		end
+
 		# Sets this bridge's name (call after getting UPnP XML or
 		# bridge config JSON), removing the IP address if present.
 		def set_name name
