@@ -23,7 +23,7 @@ module NLHue
 		MAX_SUBSCRIBED_AGE = 150000
 
 		# Number of times a bridge can fail to update
-		MAX_BRIDGE_ERR = 2
+		MAX_BRIDGE_ERR = 4
 
 		# Bridges discovered on the network
 		# [serial] => {
@@ -280,7 +280,7 @@ module NLHue
 									info = @@bridges[br.serial]
 									@@bridges.delete br.serial
 									br.remove_update_callback info[:cb]
-									notify_bridge_removed br, 'Error updating bridge.'
+									notify_bridge_removed br, "Error updating bridge: #{result}"
 									EM.next_tick do
 										br.clean # next tick to ensure after notify*removed
 										do_disco
