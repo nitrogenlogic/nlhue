@@ -5,6 +5,7 @@ require 'eventmachine'
 require 'em/protocols/httpclient'
 require 'rexml/document'
 require 'json'
+require 'cgi/util'
 
 require_relative 'request_queue'
 
@@ -550,6 +551,30 @@ module NLHue
 					end
 				rescue => e
 					yield false, e if block_given?
+				end
+			end
+		end
+
+		# Deletes the given NLHue::Scene on this bridge.  Calls the
+		# given block with true and a message on success, or false and
+		# an error on failure.  Bridge notification callbacks will be
+		# called after the result is yielded.
+		def delete_scene scene, &block
+			raise "No scene was given to delete" if scene.nil?
+			raise "Scene must be a NLHue::Scene object" unless scene.is_a?(Scene)
+			raise "Scene is not from this bridge" unless scene.bridge == self
+
+			delete_api "/scenes/#{CGI.escape(scene.id)}", :lights do |response|
+				status, result = check_json response
+
+				if status
+					@scenes.delete scene.id
+				end
+
+				yield status, result if block_given?
+
+				if status
+					Bridge.notify_bridge_callbacks self, true
 				end
 			end
 		end
