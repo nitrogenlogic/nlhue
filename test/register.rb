@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Attempts to register and unregister a username with all detected Hue bridges.
 # (C)2013 Mike Bourgeous
 

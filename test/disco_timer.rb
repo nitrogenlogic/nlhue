@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Runs periodic Bridge discovery for a while with a short discovery interval.
 # (C)2013 Mike Bourgeous
 

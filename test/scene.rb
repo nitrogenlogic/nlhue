@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Recalls a random scene on all bridges found on the network.
 # (C)2015 Mike Bourgeous
 

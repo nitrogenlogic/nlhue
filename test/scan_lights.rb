@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Tests scanning for new lights.
 # (C)2013 Mike Bourgeous
 

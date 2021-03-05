@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Prints all responses received from a search for Hue hubs.
 # (C)2013 Mike Bourgeous
 

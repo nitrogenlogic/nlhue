@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Attempts to get information from each bridge and light, then sets each light
 # to a random color.
 # (C)2013 Mike Bourgeous

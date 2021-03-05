@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Prints all responses received from an SSDP query.
 # (C)2012 Mike Bourgeous
 

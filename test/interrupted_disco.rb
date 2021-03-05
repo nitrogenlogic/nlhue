@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Repeatedly starts then interrupts discovery to make sure that bridges aren't
 # added after discovery is stopped.
 # (C)2013 Mike Bourgeous

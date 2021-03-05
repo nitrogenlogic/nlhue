@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Tests periodic bridge updates.
 # (C)2013 Mike Bourgeous
 

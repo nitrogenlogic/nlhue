@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Tests repeated deferred color changes to group 0 on all bridges.  Group
 # updates appear to be much slower, but better synchronized.
 # (C)2013 Mike Bourgeous

@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Tests repeated deferred color changes to all lights on all bridges.
 # (C)2013 Mike Bourgeous
 

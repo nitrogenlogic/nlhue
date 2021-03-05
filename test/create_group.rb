@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 # Attempts to create, modify, and delete a group on a discovered bridge.
 # (C)2014 Mike Bourgeous
 
