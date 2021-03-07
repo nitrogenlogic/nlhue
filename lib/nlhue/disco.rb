@@ -11,6 +11,9 @@ module NLHue
 	# Use #start_discovery and #stop_discovery for continuous bridge
 	# discovery.  Use #send_discovery to perform discovery only once.
 	module Disco
+                include NLHue::Log
+                extend NLHue::Log
+
 		# Number of times a bridge can be missing from discovery if not
 		# subscribed (approx. 5*15=1.25min if interval is 15)
 		MAX_BRIDGE_AGE = 5
@@ -238,7 +241,7 @@ module NLHue
 		private
 		# Calls each discovery callback with the given parameters.
 		def self.notify_callbacks *args
-			bench "Notify Hue disco callbacks: #{args[0].inspect}" do
+			NLHue.bench "Notify Hue disco callbacks: #{args[0].inspect}" do
 				@@disco_callbacks.each do |cb|
 					begin
 						cb.call *args
@@ -313,7 +316,7 @@ module NLHue
 		# callbacks.  Called when the timer set by #reset_disco_timer
 		# expires.
 		def self.update_bridges bridges
-			bench 'update_bridges' do
+			NLHue.bench 'update_bridges' do
 				@@bridges.select! do |k, br|
 					age_limit = br[:bridge].subscribed? ? MAX_SUBSCRIBED_AGE : MAX_BRIDGE_AGE
 

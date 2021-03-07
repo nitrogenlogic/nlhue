@@ -8,6 +8,9 @@ require 'em/protocols/httpclient'
 
 module NLHue
 	class RequestQueue
+                include NLHue::Log
+                extend NLHue::Log
+
 		attr_reader :host
 
 		# Initializes a request queue with the given host, default

@@ -34,6 +34,9 @@ module NLHue
 	# queued and sent one at a time to prevent overloading the bridge's
 	# CPU.
 	class Bridge
+                include NLHue::Log
+                extend NLHue::Log
+
 		# Seconds to wait after an update round finishes before sending
 		# more updates to lights and groups.
 		RATE_LIMIT = 0.2

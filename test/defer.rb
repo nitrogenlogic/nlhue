@@ -2,12 +2,12 @@
 # Tests repeated deferred color changes to all lights on all bridges.
 # (C)2013 Mike Bourgeous
 
-def log msg
+require_relative '../lib/nlhue'
+
+NLHue::Log.on_log do |msg|
 	puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S.%6N %z')} - #{msg}"
 	STDOUT.flush
 end
-
-require_relative '../lib/nlhue'
 
 USER = ENV['HUE_USER'] || 'testing1234'
 
@@ -19,14 +19,14 @@ EM.run do
 	NLHue::Disco.send_discovery(3) do |br|
 		br.username = USER
 		br.update do |status, result|
-			log_e result if result.is_a? Exception
+			NLHue.log_e result if result.is_a? Exception
 
 			count = 0
 			light_proc = proc {
 				puts "\n\n"
-				log "==================== LIGHT TICK #{count} ===================="
+                                NLHue.log "==================== LIGHT TICK #{count} ===================="
 				br.lights.values.each_with_index do |light, idx|
-					log "Setting values on #{light}"
+					NLHue.log "Setting values on #{light}"
 					light.defer
 					light.on!
 					light.bri = 255
@@ -36,7 +36,7 @@ EM.run do
 
 					count2 = count
 					light.submit do |status, result|
-						log "Finished sending to #{light} for #{count2}"
+						NLHue.log "Finished sending to #{light} for #{count2}"
 					end
 				end
 				count += 1
